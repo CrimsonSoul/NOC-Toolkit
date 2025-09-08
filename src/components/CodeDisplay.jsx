@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 /**
  * Displays the current one-time code and a progress bar indicating
@@ -12,18 +12,24 @@ import React, { useEffect, useState } from 'react'
 const CodeDisplay = ({ currentCode, previousCode, progressKey, intervalMs }) => {
   const [progress, setProgress] = useState(0)
 
+  const rafRef = useRef()
+
   useEffect(() => {
     setProgress(0)
-    const start = Date.now()
-    const id = setInterval(() => {
-      const elapsed = Date.now() - start
+    let start
+
+    const step = (timestamp) => {
+      if (start === undefined) start = timestamp
+      const elapsed = timestamp - start
       const percent = Math.min(100, (elapsed / intervalMs) * 100)
       setProgress(percent)
-      if (elapsed >= intervalMs) {
-        clearInterval(id)
+      if (elapsed < intervalMs) {
+        rafRef.current = requestAnimationFrame(step)
       }
-    }, 100)
-    return () => clearInterval(id)
+    }
+
+    rafRef.current = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(rafRef.current)
   }, [progressKey, intervalMs])
 
   return (

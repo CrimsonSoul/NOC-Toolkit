@@ -34,8 +34,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
       <div style={{ marginBottom: '1rem' }}>
         <button
           onClick={() => window.nocListAPI?.openFile?.('contacts.xlsx')}
-          className="btn btn-secondary open-contact-btn"
-          style={{ borderRadius: '6px' }}
+          className="btn btn-secondary"
         >
           Open Contact List Excel
         </button>
@@ -48,7 +47,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
             value={query}
             onChange={e => setQuery(e.target.value)}
             className="input"
-            style={{ width: '100%', paddingRight: '2.25rem', borderRadius: '6px' }}
+            style={{ width: '100%', paddingRight: '2.25rem' }}
           />
           {query && (
             <button
@@ -66,8 +65,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 420px))',
-            justifyContent: 'start',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
             gap: '1rem'
           }}
         >
@@ -92,12 +90,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
               <button
                 onClick={() => addAdhocEmail(contact.Email)}
                 className="btn"
-                style={{
-                  marginTop: '0.5rem',
-                  padding: '0.25rem 0.75rem',
-                  borderRadius: '6px',
-                  fontSize: '1rem'
-                }}
+                style={{ marginTop: '0.5rem' }}
               >
                 Add to Email List
               </button>

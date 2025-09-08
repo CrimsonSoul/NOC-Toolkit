@@ -171,6 +171,7 @@ body {
   color: var(--text-light);
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   animation: fade-in 0.3s ease;
+  box-sizing: border-box;
 }
 
 .contact-card strong {

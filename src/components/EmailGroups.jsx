@@ -143,37 +143,39 @@ const EmailGroups = ({
       </div>
 
       <div className="mb-1-5">
-        <List
-          height={Math.min(filteredGroups.length * 40, 400)}
-          itemCount={filteredGroups.length}
-          itemSize={40}
-          width="100%"
-        >
-          {({ index, style }) => {
-            const group = filteredGroups[index]
-            return (
-              <div style={style}>
-                <button
-                  onClick={() => toggleSelect(group.name)}
-                  className={`btn fade-in ${selectedGroups.includes(group.name) ? 'active' : ''}`}
-                  style={{ width: '100%', justifyContent: 'flex-start' }}
-                >
-                  {group.name}
-                  <span
-                    style={{ marginLeft: '0.25rem', fontSize: '0.8rem', color: 'var(--text-light)' }}
+        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+          <List
+            height={Math.min(filteredGroups.length * 40, 400)}
+            itemCount={filteredGroups.length}
+            itemSize={40}
+            width="100%"
+          >
+            {({ index, style }) => {
+              const group = filteredGroups[index]
+              return (
+                <div style={style}>
+                  <button
+                    onClick={() => toggleSelect(group.name)}
+                    className={`btn fade-in ${selectedGroups.includes(group.name) ? 'active' : ''}`}
+                    style={{ width: '100%', justifyContent: 'flex-start' }}
                   >
-                    ({group.emails.length})
-                  </span>
-                </button>
-              </div>
-            )
-          }}
-        </List>
-        {(selectedGroups.length > 0 || adhocEmails.length > 0) && (
-          <button onClick={clearAll} className="btn btn-secondary fade-in mt-0-5">
-            Clear All
-          </button>
-        )}
+                    {group.name}
+                    <span
+                      style={{ marginLeft: '0.25rem', fontSize: '0.8rem', color: 'var(--text-light)' }}
+                    >
+                      ({group.emails.length})
+                    </span>
+                  </button>
+                </div>
+              )
+            }}
+          </List>
+          {(selectedGroups.length > 0 || adhocEmails.length > 0) && (
+            <button onClick={clearAll} className="btn btn-secondary fade-in mt-0-5">
+              Clear All
+            </button>
+          )}
+        </div>
       </div>
 
       {mergedEmails.length > 0 && (

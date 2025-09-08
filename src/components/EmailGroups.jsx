@@ -70,7 +70,7 @@ const EmailGroups = ({ emailData, adhocEmails, selectedGroups, setSelectedGroups
         </button>
       </div>
 
-      <div className="stack-on-small" style={{ alignItems: 'center', marginBottom: '1.5rem', gap: '0.5rem' }}>
+      <div className="stack-on-small" style={{ alignItems: 'center', marginBottom: '1.5rem', gap: '0.75rem' }}>
         <div style={{ position: 'relative', flex: '1 1 250px', maxWidth: '300px' }}>
           <input
             type="text"
@@ -92,7 +92,7 @@ const EmailGroups = ({ emailData, adhocEmails, selectedGroups, setSelectedGroups
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.5rem' }}>
         {filteredGroups.map(group => (
           <button
             key={group.name}
@@ -120,7 +120,7 @@ const EmailGroups = ({ emailData, adhocEmails, selectedGroups, setSelectedGroups
 
       {mergedEmails.length > 0 && (
         <>
-          <div style={{ marginBottom: '0.5rem', display: 'flex', gap: '0.5rem' }}>
+          <div style={{ marginBottom: '0.5rem', display: 'flex', gap: '0.75rem' }}>
             <button onClick={copyToClipboard} className="btn fade-in">
               Copy Email List
             </button>
@@ -129,7 +129,7 @@ const EmailGroups = ({ emailData, adhocEmails, selectedGroups, setSelectedGroups
             </button>
             {copied && <span style={{ color: 'lightgreen', alignSelf: 'center' }}>Copied</span>}
           </div>
-          <div style={{ background: 'var(--bg-secondary)', padding: '1rem', borderRadius: '4px', color: 'var(--text-light)' }}>
+          <div style={{ background: 'var(--bg-secondary)', padding: '1rem', borderRadius: 'var(--radius)', color: 'var(--text-light)' }}>
             <strong>Merged Emails:</strong>
             <div style={{ wordBreak: 'break-word', marginTop: '0.5rem' }}>
               {mergedEmails.join(', ')}

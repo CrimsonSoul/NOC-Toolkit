@@ -27,7 +27,7 @@ beforeEach(() => {
 })
 
 describe('watchExcelFiles', () => {
-  it('debounces change events', () => {
+  it('debounces change events', async () => {
     const sendSpy = vi.fn()
     main.__setWin({ webContents: { send: sendSpy } })
 
@@ -36,13 +36,13 @@ describe('watchExcelFiles', () => {
     handlerMap.change('file2')
     handlerMap.change('file3')
 
-    vi.advanceTimersByTime(300)
+    await vi.advanceTimersByTimeAsync(300)
 
     expect(sendSpy).toHaveBeenCalledTimes(1)
     cleanup()
   })
 
-  it('debounces unlink events', () => {
+  it('debounces unlink events', async () => {
     const sendSpy = vi.fn()
     main.__setWin({ webContents: { send: sendSpy } })
 
@@ -51,7 +51,7 @@ describe('watchExcelFiles', () => {
     handlerMap.unlink('file2')
     handlerMap.unlink('file3')
 
-    vi.advanceTimersByTime(300)
+    await vi.advanceTimersByTimeAsync(300)
 
     expect(sendSpy).toHaveBeenCalledTimes(1)
     cleanup()

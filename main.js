@@ -39,13 +39,14 @@ const getExcelPaths = () => ({
  *   file that has changed. If provided, only that file is re-read and merged
  *   into the cached data.
  */
-function loadExcelFiles(changedFilePath) {
+async function loadExcelFiles(changedFilePath) {
   const { groupsPath, contactsPath } = getExcelPaths()
 
   if (!changedFilePath || changedFilePath === groupsPath) {
     if (fs.existsSync(groupsPath)) {
       try {
-        const groupWorkbook = xlsx.readFile(groupsPath)
+        const groupBuffer = await fs.promises.readFile(groupsPath)
+        const groupWorkbook = xlsx.read(groupBuffer, { type: 'buffer' })
         const groupSheet = groupWorkbook.Sheets[groupWorkbook.SheetNames[0]]
         cachedData.emailData = xlsx.utils.sheet_to_json(groupSheet, { header: 1 })
       } catch (err) {
@@ -59,7 +60,8 @@ function loadExcelFiles(changedFilePath) {
   if (!changedFilePath || changedFilePath === contactsPath) {
     if (fs.existsSync(contactsPath)) {
       try {
-        const contactWorkbook = xlsx.readFile(contactsPath)
+        const contactBuffer = await fs.promises.readFile(contactsPath)
+        const contactWorkbook = xlsx.read(contactBuffer, { type: 'buffer' })
         const contactSheet = contactWorkbook.Sheets[contactWorkbook.SheetNames[0]]
         cachedData.contactData = xlsx.utils.sheet_to_json(contactSheet)
       } catch (err) {
@@ -105,9 +107,9 @@ function watchExcelFiles(testWatcher) {
     }
   }
 
-  const debouncedOnChange = debounce((filePath) => {
+  const debouncedOnChange = debounce(async (filePath) => {
     console.log(`File changed: ${filePath}`)
-    loadExcelFiles(filePath)
+    await loadExcelFiles(filePath)
     sendExcelUpdate()
   }, DEBOUNCE_DELAY)
 
@@ -181,16 +183,16 @@ function createWindow() {
 }
 
 if (process.env.NODE_ENV !== 'test') {
-  app.whenReady().then(() => {
+  app.whenReady().then(async () => {
     createWindow()
-    loadExcelFiles()
+    await loadExcelFiles()
     watchExcelFiles()
 
-    app.on('activate', () => {
+    app.on('activate', async () => {
       if (BrowserWindow.getAllWindows().length === 0) {
         createWindow()
         if (!watcher) {
-          loadExcelFiles()
+          await loadExcelFiles()
           watchExcelFiles()
         }
       }

@@ -14,7 +14,8 @@
     "react-dom": "^18.0.0",
     "react-hot-toast": "^2.4.0",
     "xlsx": "^0.18.5",
-    "chokidar": "^3.6.0"
+    "chokidar": "^3.6.0",
+    "react-window": "1.8.11"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",

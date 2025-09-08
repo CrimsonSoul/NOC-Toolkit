@@ -106,47 +106,48 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
       </div>
 
       {filtered.length > 0 ? (
-        <List
-          height={400}
-          itemCount={filtered.length}
-          itemSize={150}
-          width={'100%'}
-          ref={listRef}
-          className="contact-list"
-        >
-          {({ index, style }) => {
-            const contact = filtered[index]
-            return (
-              <div style={style} key={contact.Email} className="contact-card">
-                <strong>{contact.Name}</strong>
-                <p className="m-0 mt-0-5">
-                  <span className="label">Title:</span> {contact.Title}
-                </p>
-                <p className="m-0">
-                  <span className="label">Email:</span>{' '}
-                  <a
-                    href={`mailto:${contact.Email}`}
-                    style={{ whiteSpace: 'nowrap' }}
+        <div style={{ maxWidth: '600px', margin: '0 auto' }} className="contact-list">
+          <List
+            height={400}
+            itemCount={filtered.length}
+            itemSize={150}
+            width={'100%'}
+            ref={listRef}
+          >
+            {({ index, style }) => {
+              const contact = filtered[index]
+              return (
+                <div style={style} key={contact.Email} className="contact-card">
+                  <strong>{contact.Name}</strong>
+                  <p className="m-0 mt-0-5">
+                    <span className="label">Title:</span> {contact.Title}
+                  </p>
+                  <p className="m-0">
+                    <span className="label">Email:</span>{' '}
+                    <a
+                      href={`mailto:${contact.Email}`}
+                      style={{ whiteSpace: 'nowrap' }}
+                    >
+                      {contact.Email}
+                    </a>
+                  </p>
+                  <p className="m-0">
+                    <span className="label">Phone:</span> {formatPhones(contact.Phone)}
+                  </p>
+                  <button
+                    ref={(el) => (itemRefs.current[index] = el)}
+                    onClick={() => addAdhocEmail(contact.Email)}
+                    className="btn btn-small rounded-6 mt-0-5"
+                    onKeyDown={handleKeyDown}
+                    onFocus={() => setActiveIndex(index)}
                   >
-                    {contact.Email}
-                  </a>
-                </p>
-                <p className="m-0">
-                  <span className="label">Phone:</span> {formatPhones(contact.Phone)}
-                </p>
-                <button
-                  ref={(el) => (itemRefs.current[index] = el)}
-                  onClick={() => addAdhocEmail(contact.Email)}
-                  className="btn btn-small rounded-6 mt-0-5"
-                  onKeyDown={handleKeyDown}
-                  onFocus={() => setActiveIndex(index)}
-                >
-                  Add to Email List
-                </button>
-              </div>
-            )
-          }}
-        </List>
+                    Add to Email List
+                  </button>
+                </div>
+              )
+            }}
+          </List>
+        </div>
       ) : (
         <p className="text-muted">No matching contacts.</p>
       )}

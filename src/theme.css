@@ -25,9 +25,10 @@ body {
 }
 
 .btn {
-  padding: 0.6rem 1.2rem;
+  padding: 0.5rem 1rem;
+  margin: 0.25rem;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   background: var(--button-bg);
   color: var(--button-text);
   cursor: pointer;
@@ -35,6 +36,11 @@ body {
   font-size: 1.1rem;
   font-family: 'DM Sans', sans-serif;
   transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+  max-width: 100%;
 }
 
 .btn:hover {
@@ -160,6 +166,7 @@ body {
 .btn-small {
   padding: 0.25rem 0.75rem;
   font-size: 1rem;
+  border-radius: 6px;
 }
 .break-word { word-break: break-word; }
 
@@ -172,6 +179,10 @@ body {
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   animation: fade-in 0.3s ease;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-width: 100%;
 }
 
 .contact-card strong {

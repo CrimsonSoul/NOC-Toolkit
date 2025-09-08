@@ -1,4 +1,11 @@
-import React, { useState, useMemo } from 'react'
+import React, {
+  useState,
+  useMemo,
+  useDeferredValue,
+  useRef,
+  useEffect
+} from 'react'
+import { FixedSizeList as List } from 'react-window'
 import { formatPhones } from '../utils/formatPhones'
 
 /**
@@ -9,6 +16,10 @@ import { formatPhones } from '../utils/formatPhones'
  */
 const ContactSearch = ({ contactData, addAdhocEmail }) => {
   const [query, setQuery] = useState('')
+  const deferredQuery = useDeferredValue(query)
+  const listRef = useRef(null)
+  const itemRefs = useRef({})
+  const [activeIndex, setActiveIndex] = useState(-1)
 
   const indexedContacts = useMemo(
     () =>
@@ -20,9 +31,35 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
   )
 
   const filtered = useMemo(() => {
-    const q = query.toLowerCase()
+    const q = deferredQuery.toLowerCase()
     return indexedContacts.filter((c) => c._search.includes(q))
-  }, [query, indexedContacts])
+  }, [deferredQuery, indexedContacts])
+
+  useEffect(() => {
+    if (activeIndex >= 0) {
+      const btn = itemRefs.current[activeIndex]
+      btn?.focus()
+    }
+  }, [activeIndex, filtered])
+
+  const handleNav = (direction) => {
+    setActiveIndex((prev) => {
+      const next = direction === 'down' ? prev + 1 : prev - 1
+      const clamped = Math.max(0, Math.min(filtered.length - 1, next))
+      listRef.current?.scrollToItem(clamped)
+      return clamped
+    })
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      handleNav('down')
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      handleNav('up')
+    }
+  }
 
   return (
     <div>
@@ -41,7 +78,17 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
               type="text"
               placeholder="Search contacts..."
               value={query}
-              onChange={e => setQuery(e.target.value)}
+              onChange={e => {
+                setQuery(e.target.value)
+                setActiveIndex(-1)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowDown' && filtered.length) {
+                  e.preventDefault()
+                  setActiveIndex(0)
+                  listRef.current?.scrollToItem(0)
+                }
+              }}
               className="input rounded-6 search-input"
               style={{ '--clear-btn-space': '2.25rem' }}
             />
@@ -59,45 +106,51 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
       </div>
 
       {filtered.length > 0 ? (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 420px))',
-            justifyContent: 'start',
-            gap: '1rem'
-          }}
+        <List
+          height={400}
+          itemCount={filtered.length}
+          itemSize={150}
+          width={'100%'}
+          ref={listRef}
+          className="contact-list"
         >
-          {filtered.map((contact) => (
-            <div key={contact.Email} className="contact-card">
-            <strong>{contact.Name}</strong>
-            <p className="m-0 mt-0-5">
-              <span className="label">Title:</span> {contact.Title}
-            </p>
-            <p className="m-0">
-              <span className="label">Email:</span>{' '}
-              <a
-                href={`mailto:${contact.Email}`}
-                style={{ whiteSpace: 'nowrap' }}
-              >
-                {contact.Email}
-              </a>
-            </p>
-            <p className="m-0">
-              <span className="label">Phone:</span> {formatPhones(contact.Phone)}
-            </p>
-            <button
-              onClick={() => addAdhocEmail(contact.Email)}
-              className="btn btn-small rounded-6 mt-0-5"
-            >
-              Add to Email List
-            </button>
-          </div>
-        ))}
-      </div>
-    ) : (
-      <p className="text-muted">No matching contacts.</p>
-    )}
-  </div>
+          {({ index, style }) => {
+            const contact = filtered[index]
+            return (
+              <div style={style} key={contact.Email} className="contact-card">
+                <strong>{contact.Name}</strong>
+                <p className="m-0 mt-0-5">
+                  <span className="label">Title:</span> {contact.Title}
+                </p>
+                <p className="m-0">
+                  <span className="label">Email:</span>{' '}
+                  <a
+                    href={`mailto:${contact.Email}`}
+                    style={{ whiteSpace: 'nowrap' }}
+                  >
+                    {contact.Email}
+                  </a>
+                </p>
+                <p className="m-0">
+                  <span className="label">Phone:</span> {formatPhones(contact.Phone)}
+                </p>
+                <button
+                  ref={(el) => (itemRefs.current[index] = el)}
+                  onClick={() => addAdhocEmail(contact.Email)}
+                  className="btn btn-small rounded-6 mt-0-5"
+                  onKeyDown={handleKeyDown}
+                  onFocus={() => setActiveIndex(index)}
+                >
+                  Add to Email List
+                </button>
+              </div>
+            )
+          }}
+        </List>
+      ) : (
+        <p className="text-muted">No matching contacts.</p>
+      )}
+    </div>
   )
 }
 

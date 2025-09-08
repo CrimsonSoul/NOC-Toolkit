@@ -29,7 +29,7 @@ afterAll(() => {
 })
 
 describe('incremental Excel loading', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     // Seed initial data for both files
     const groupWB = xlsx.utils.book_new()
     const groupSheet = xlsx.utils.aoa_to_sheet([['email'], ['initial@example.com']])
@@ -42,10 +42,10 @@ describe('incremental Excel loading', () => {
     xlsx.writeFile(contactWB, contactsPath)
 
     __setCachedData({ emailData: [], contactData: [] })
-    loadExcelFiles()
+    await loadExcelFiles()
   })
 
-  it('updates only the modified workbook', () => {
+  it('updates only the modified workbook', async () => {
     const initial = getCachedData()
     expect(initial.contactData).toEqual([{ Name: 'Alice', Email: 'alice@example.com' }])
     expect(initial.emailData[1][0]).toBe('initial@example.com')
@@ -56,7 +56,7 @@ describe('incremental Excel loading', () => {
     xlsx.utils.book_append_sheet(newContactWB, newContactSheet, 'Sheet1')
     xlsx.writeFile(newContactWB, contactsPath)
 
-    loadExcelFiles(contactsPath)
+    await loadExcelFiles(contactsPath)
 
     const updated = getCachedData()
     // Email data remains the same
@@ -65,12 +65,12 @@ describe('incremental Excel loading', () => {
     expect(updated.contactData).toEqual([{ Name: 'Bob', Email: 'bob@example.com' }])
   })
 
-  it('retains cached data when groups file is missing', () => {
+  it('retains cached data when groups file is missing', async () => {
     const initial = getCachedData()
     fs.unlinkSync(groupsPath)
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-    loadExcelFiles(groupsPath)
+    await loadExcelFiles(groupsPath)
 
     const updated = getCachedData()
     expect(updated.emailData).toEqual(initial.emailData)
@@ -80,12 +80,12 @@ describe('incremental Excel loading', () => {
     warnSpy.mockRestore()
   })
 
-  it('retains cached data when contacts file is missing', () => {
+  it('retains cached data when contacts file is missing', async () => {
     const initial = getCachedData()
     fs.unlinkSync(contactsPath)
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-    loadExcelFiles(contactsPath)
+    await loadExcelFiles(contactsPath)
 
     const updated = getCachedData()
     expect(updated.contactData).toEqual(initial.contactData)

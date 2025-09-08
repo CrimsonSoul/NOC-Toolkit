@@ -1,5 +1,7 @@
 import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
+import { FixedSizeList as List } from 'react-window'
+import useDebounce from '../hooks/useDebounce'
 
 /**
  * Manage selection of email groups and creation of merged mailing lists.
@@ -19,6 +21,7 @@ const EmailGroups = ({
 }) => {
   const [copied, setCopied] = useState(false)
   const [search, setSearch] = useState('')
+  const debouncedSearch = useDebounce(search, 300)
   const timeoutRef = useRef(null)
 
   const groups = useMemo(() => {
@@ -32,9 +35,9 @@ const EmailGroups = ({
   }, [emailData])
 
   const filteredGroups = useMemo(() => {
-    const term = search.toLowerCase()
+    const term = debouncedSearch.toLowerCase()
     return groups.filter((group) => group._search.includes(term))
-  }, [groups, search])
+  }, [groups, debouncedSearch])
 
   const groupMap = useMemo(
     () => new Map(groups.map((g) => [g.name, g.emails])),
@@ -132,25 +135,50 @@ const EmailGroups = ({
         </div>
       </div>
 
-        <div className="flex-wrap gap-0-5 mb-1-5">
-          {filteredGroups.map(group => (
-            <button
-              key={group.name}
-              onClick={() => toggleSelect(group.name)}
-              className={`btn fade-in ${selectedGroups.includes(group.name) ? 'active' : ''}`}
+        <div className="mb-1-5">
+          <div data-testid="group-list">
+            <List
+              height={Math.min(400, 40 * filteredGroups.length)}
+              itemCount={filteredGroups.length}
+              itemSize={40}
+              width={typeof window !== 'undefined' ? window.innerWidth : 300}
+              itemData={{
+                groups: filteredGroups,
+                selectedGroups,
+                toggleSelect,
+              }}
             >
-              {group.name}
-              <span style={{ marginLeft: '0.25rem', fontSize: '0.8rem', color: 'var(--text-light)' }}>
-                ({group.emails.length})
-              </span>
+              {({ index, style, data }) => {
+                const group = data.groups[index]
+                return (
+                  <div style={style} className="mb-0-5">
+                    <button
+                      onClick={() => data.toggleSelect(group.name)}
+                      className={`btn fade-in ${data.selectedGroups.includes(group.name) ? 'active' : ''}`}
+                      style={{ width: '100%' }}
+                    >
+                      {group.name}
+                      <span
+                        style={{
+                          marginLeft: '0.25rem',
+                          fontSize: '0.8rem',
+                          color: 'var(--text-light)',
+                        }}
+                      >
+                        ({group.emails.length})
+                      </span>
+                    </button>
+                  </div>
+                )
+              }}
+            </List>
+          </div>
+          {(selectedGroups.length > 0 || adhocEmails.length > 0) && (
+            <button onClick={clearAll} className="btn btn-secondary fade-in mt-0-5">
+              Clear All
             </button>
-        ))}
-        {(selectedGroups.length > 0 || adhocEmails.length > 0) && (
-          <button onClick={clearAll} className="btn btn-secondary fade-in">
-            Clear All
-          </button>
-        )}
-      </div>
+          )}
+        </div>
 
       {mergedEmails.length > 0 && (
         <>

@@ -149,6 +149,7 @@ const EmailGroups = ({
             itemCount={filteredGroups.length}
             itemSize={40}
             width="100%"
+            className="minimal-scrollbar"
           >
             {({ index, style }) => {
               const group = filteredGroups[index]
@@ -180,7 +181,7 @@ const EmailGroups = ({
 
       {mergedEmails.length > 0 && (
         <>
-            <div className="flex gap-0-5 mb-0-5">
+            <div className="flex flex-wrap gap-0-5 mb-0-5">
               <button onClick={copyToClipboard} className="btn fade-in">
                 Copy Email List
               </button>

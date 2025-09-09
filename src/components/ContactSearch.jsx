@@ -124,6 +124,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
             itemSize={150}
             width={'100%'}
             ref={listRef}
+            className="minimal-scrollbar"
           >
             {({ index, style }) => {
               const contact = filtered[index]

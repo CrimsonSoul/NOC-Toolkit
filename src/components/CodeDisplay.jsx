@@ -33,12 +33,13 @@ const CodeDisplay = ({ currentCode, previousCode, progressKey, intervalMs }) => 
   }, [progressKey, intervalMs])
 
   return (
-    <div className="text-center">
-      <div className="large-bold">
-        Code: {currentCode}
+    <div className="code-display">
+      <div className="small-text text-muted">Current Code</div>
+      <div className="large-bold" aria-live="polite">
+        {currentCode}
       </div>
       <div className="small-muted">
-        Prev: {previousCode || 'N/A'}
+        Previous: {previousCode || 'N/A'}
       </div>
       <div
         className="progress-container"

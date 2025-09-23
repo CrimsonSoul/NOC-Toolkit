@@ -3,7 +3,7 @@ import React, {
   useMemo,
   useDeferredValue,
   useRef,
-  useEffect
+  useEffect,
 } from 'react'
 import { FixedSizeList as List } from 'react-window'
 import { formatPhones } from '../utils/formatPhones'
@@ -28,7 +28,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
         ...c,
         _search: Object.values(c).join(' ').toLowerCase(),
       })),
-    [contactData]
+    [contactData],
   )
 
   const filtered = useMemo(() => {
@@ -45,8 +45,8 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
 
   useEffect(() => {
     const updateHeight = () => {
-      const maxHeight = window.innerHeight - 220
-      setListHeight(Math.max(300, maxHeight))
+      const maxHeight = window.innerHeight - 260
+      setListHeight(Math.max(320, maxHeight))
     }
     updateHeight()
     window.addEventListener('resize', updateHeight)
@@ -72,18 +72,60 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
     }
   }
 
+  const renderContact = ({ index, style }) => {
+    const contact = filtered[index]
+    const initials = contact.Name
+      ? contact.Name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
+      : '?'
+
+    return (
+      <div style={{ ...style, padding: '0 0.5rem 1.25rem' }} className="virtual-row">
+        <article className="contact-card">
+          <div className="contact-card__header">
+            <div className="contact-card__avatar">{initials}</div>
+            <div>
+              <h3 className="contact-card__name">{contact.Name}</h3>
+              {contact.Title && <p className="contact-card__title">{contact.Title}</p>}
+            </div>
+          </div>
+
+          <div className="contact-card__row">
+            <span className="label">Email</span>
+            <a href={`mailto:${contact.Email}`} style={{ whiteSpace: 'nowrap' }}>
+              {contact.Email}
+            </a>
+          </div>
+          <div className="contact-card__row">
+            <span className="label">Phone</span>
+            <span>{formatPhones(contact.Phone) || 'N/A'}</span>
+          </div>
+
+          <div className="contact-card__actions">
+            <button
+              ref={(el) => (itemRefs.current[index] = el)}
+              onClick={() => addAdhocEmail(contact.Email)}
+              className="btn btn-ghost btn-small"
+              onKeyDown={handleKeyDown}
+              onFocus={() => setActiveIndex(index)}
+            >
+              Add to Email List
+            </button>
+          </div>
+        </article>
+      </div>
+    )
+  }
+
   return (
-    <div>
+    <div className="contact-search">
       <div className="sticky-header">
-        <div className="mb-1">
+        <div className="stack-on-small align-center gap-0-5 mb-1">
           <button
             onClick={() => window.nocListAPI?.openFile?.('contacts.xlsx')}
-            className="btn btn-secondary open-contact-btn rounded-6"
+            className="btn btn-secondary open-contact-btn"
           >
             Open Contact List Excel
           </button>
-        </div>
-        <div className="stack-on-small align-center gap-0-5 mb-1">
           <div className="input-wrapper">
             <input
               type="text"
@@ -104,64 +146,29 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
               style={{ '--clear-btn-space': '2.25rem' }}
             />
             {query && (
-              <button
-                onClick={() => setQuery('')}
-                className="clear-btn"
-                title="Clear search"
-              >
+              <button onClick={() => setQuery('')} className="clear-btn" title="Clear search">
                 ✕
               </button>
             )}
           </div>
         </div>
+        <p className="small-muted m-0">Browse the directory and quickly add people to an ad-hoc list.</p>
       </div>
 
       {filtered.length > 0 ? (
-        <div style={{ maxWidth: '600px', margin: '0 auto' }} className="contact-list">
+        <div className="contact-list minimal-scrollbar">
           <List
             height={listHeight}
             itemCount={filtered.length}
-            itemSize={150}
-            width={'100%'}
+            itemSize={180}
+            width="100%"
             ref={listRef}
-            className="minimal-scrollbar"
           >
-            {({ index, style }) => {
-              const contact = filtered[index]
-              return (
-                <div style={style} key={contact.Email} className="contact-card">
-                  <strong>{contact.Name}</strong>
-                  <p className="m-0 mt-0-5">
-                    <span className="label">Title:</span> {contact.Title}
-                  </p>
-                  <p className="m-0">
-                    <span className="label">Email:</span>{' '}
-                    <a
-                      href={`mailto:${contact.Email}`}
-                      style={{ whiteSpace: 'nowrap' }}
-                    >
-                      {contact.Email}
-                    </a>
-                  </p>
-                  <p className="m-0">
-                    <span className="label">Phone:</span> {formatPhones(contact.Phone)}
-                  </p>
-                  <button
-                    ref={(el) => (itemRefs.current[index] = el)}
-                    onClick={() => addAdhocEmail(contact.Email)}
-                    className="btn btn-small rounded-6 mt-0-5"
-                    onKeyDown={handleKeyDown}
-                    onFocus={() => setActiveIndex(index)}
-                  >
-                    Add to Email List
-                  </button>
-                </div>
-              )
-            }}
+            {renderContact}
           </List>
         </div>
       ) : (
-        <p className="text-muted">No matching contacts.</p>
+        <div className="empty-state">No matching contacts.</div>
       )}
     </div>
   )

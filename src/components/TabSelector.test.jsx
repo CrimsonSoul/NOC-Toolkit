@@ -7,9 +7,9 @@ describe('TabSelector accessibility', () => {
   it('allows keyboard selection of tabs', () => {
     const setTab = vi.fn()
     render(<TabSelector tab="email" setTab={setTab} />)
-    const contactBtn = screen.getByRole('button', { name: /contact search/i })
-    contactBtn.focus()
-    fireEvent.keyDown(contactBtn, { key: 'Enter', code: 'Enter' })
+    const contactTab = screen.getByRole('tab', { name: /contact search/i })
+    contactTab.focus()
+    fireEvent.keyDown(contactTab, { key: 'Enter', code: 'Enter' })
     expect(setTab).toHaveBeenCalledWith('contact')
   })
 })

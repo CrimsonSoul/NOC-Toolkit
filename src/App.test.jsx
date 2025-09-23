@@ -27,9 +27,8 @@ describe('App', () => {
       onExcelWatchError: () => () => {},
     }
     render(<App />)
-    expect(
-      screen.getByText(/_\s+______\s+______\s+__\s+_/)
-    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /operations console/i })).toBeInTheDocument()
+    expect(screen.getByText(/manage contacts, distribution groups/i)).toBeInTheDocument()
   })
 
   it('shows image when logo file is available', async () => {
@@ -42,7 +41,7 @@ describe('App', () => {
       onExcelWatchError: () => () => {},
     }
     render(<App />)
-    expect(await screen.findByAltText('NOC List Logo')).toBeInTheDocument()
+    expect(await screen.findByAltText(/noc list logo/i)).toBeInTheDocument()
   })
 })
 

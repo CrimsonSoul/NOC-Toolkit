@@ -78,6 +78,7 @@ const WeatherClock = () => {
         }
       }
     }
+
     fetchWeather()
     return () => {
       controller.abort()
@@ -87,27 +88,20 @@ const WeatherClock = () => {
 
   const description = useMemo(() => weatherCodeMap[weather?.code] || '', [weather])
 
-    return (
-      <div className="text-center line-tight">
-        <div className="large-bold">
-          {now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-        </div>
-        <div className="small-text">
-          {now.toLocaleDateString()}
-        </div>
-        {weather && (
-          <div className="small-text">
-            Bowling Green: {Math.round(weather.temp)}°F {description}
-          </div>
-        )}
-        {error && (
-          <div className="small-muted">
-            Weather unavailable
-          </div>
-        )}
+  return (
+    <div className="weather-clock">
+      <div className="large-bold" aria-live="polite">
+        {now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
       </div>
+      <div className="small-text">{now.toLocaleDateString()}</div>
+      {weather && (
+        <div className="small-text">
+          Bowling Green: {Math.round(weather.temp)}°F {description}
+        </div>
+      )}
+      {error && <div className="small-muted">Weather unavailable</div>}
+    </div>
   )
 }
 
 export default WeatherClock
-

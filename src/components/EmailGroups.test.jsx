@@ -25,8 +25,10 @@ describe('EmailGroups', () => {
         setAdhocEmails={() => {}}
       />
     )
-    expect(screen.getByRole('button', { name: /Group A \(2\)/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Group B \(1\)/ })).toBeInTheDocument()
+    const groupAButton = screen.getByRole('button', { name: /Group A/i })
+    const groupBButton = screen.getByRole('button', { name: /Group B/i })
+    expect(groupAButton).toHaveTextContent(/2\s+contacts/i)
+    expect(groupBButton).toHaveTextContent(/1\s+contact/i)
   })
 
   it('allows selecting groups and clearing all', async () => {
@@ -47,11 +49,11 @@ describe('EmailGroups', () => {
     }
 
     render(<Wrapper />)
-    const groupA = screen.getByRole('button', { name: /Group A \(2\)/ })
+    const groupA = screen.getByRole('button', { name: /Group A/i })
     await user.click(groupA)
-    expect(screen.getByRole('button', { name: /Group A \(2\)/ })).toHaveClass('active')
+    expect(screen.getByRole('button', { name: /Group A/i })).toHaveClass('is-selected')
     const clear = screen.getByRole('button', { name: /Clear All/i })
     await user.click(clear)
-    expect(screen.getByRole('button', { name: /Group A \(2\)/ })).not.toHaveClass('active')
+    expect(screen.getByRole('button', { name: /Group A/i })).not.toHaveClass('is-selected')
   })
 })

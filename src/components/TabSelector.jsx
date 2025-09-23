@@ -7,7 +7,7 @@ import React from 'react'
  * @param {(tab: string) => void} props.setTab - Update active tab.
  */
 const TabSelector = ({ tab, setTab }) => (
-  <div className="stack-on-small tab-selector">
+  <div className="stack-on-small tab-selector" role="tablist" aria-label="Primary tools">
     {['email', 'contact', 'radar'].map((t) => (
       <button
         key={t}
@@ -20,6 +20,9 @@ const TabSelector = ({ tab, setTab }) => (
           }
         }}
         className={`tab-button ${tab === t ? 'active' : ''}`}
+        role="tab"
+        aria-selected={tab === t}
+        tabIndex={tab === t ? 0 : -1}
       >
         {t === 'email'
           ? 'Email Groups'

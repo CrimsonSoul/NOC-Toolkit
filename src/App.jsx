@@ -123,67 +123,28 @@ function App() {
   )
 
   return (
-    <div
-      className="fade-in"
-      style={{
-        fontFamily: 'DM Sans, sans-serif',
-        background: 'var(--bg-primary)',
-        color: 'var(--text-light)',
-        padding: '2rem',
-        height: '100vh',
-        boxSizing: 'border-box',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-      }}
-    >
+    <div className="app-shell fade-in">
       <Toaster position="top-right" toastOptions={toastOptions} />
 
-      {/* Header section stays fixed at the top */}
-      <header
-        style={{
-          flex: '0 0 auto',
-          position: 'sticky',
-          top: 0,
-          zIndex: 10,
-          background: 'var(--bg-primary)',
-        }}
-      >
-          <div className="stack-on-small align-center gap-1 mb-1">
+      <header className="app-header">
+        <div className="app-header-row">
+          <div className="app-brand">
             {logoAvailable ? (
-              <img
-                src="logo.png"
-                alt="NOC List Logo"
-                style={{ width: '200px' }}
-            />
-          ) : (
-            <pre
-              style={{
-                fontFamily: 'monospace',
-                fontSize: '1rem',
-                lineHeight: '1.2',
-                margin: 0,
-              }}
-            >{`    _   ______  ______   __    _      __
-   / | / / __ \\/ ____/  / /   (_)____/ /_
-  /  |/ / / / / /      / /   / / ___/ __/
- / /|  / /_/ / /___   / /___/ (__  ) /_
-/_/ |_|\\____/\\____/  /_____/_/____/\\__/`}</pre>
-          )}
-          <div
-            style={{
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '4px',
-              padding: '0.5rem 1rem',
-              display: 'flex',
-              gap: '2rem',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '0.9rem',
-              textAlign: 'center',
-            }}
-          >
+              <img src="logo.png" alt="NOC List logo" className="app-logo" />
+            ) : (
+              <div className="app-logo-fallback" aria-label="NOC List logo">
+                <span>NOC</span>
+                <span>LIST</span>
+              </div>
+            )}
+            <div>
+              <h1 className="app-title">Operations Console</h1>
+              <p className="app-subtitle">
+                Manage contacts, distribution groups, and live monitoring tools
+              </p>
+            </div>
+          </div>
+          <div className="app-meta-card">
             <CodeDisplay
               currentCode={currentCode}
               previousCode={previousCode}
@@ -193,40 +154,47 @@ function App() {
             <WeatherClock />
           </div>
         </div>
+
         <TabSelector tab={tab} setTab={setTab} />
 
         {tab !== 'radar' && (
-          <div className="stack-on-small gap-1 mb-1">
+          <div className="app-toolbar">
             <button onClick={refreshData} className="btn">
               Refresh Data
             </button>
-            <span className="small-text self-center">
-              Last Refreshed: {lastRefresh}
-            </span>
+            <span className="app-toolbar-meta">Last refreshed: {lastRefresh}</span>
           </div>
         )}
       </header>
 
-      {/* Scrollable content area */}
-      <div style={{ flex: '1 1 auto', overflowY: 'auto' }}>
+      <main className="app-main">
         {tab === 'email' && (
-          <EmailGroups
-            emailData={emailData}
-            adhocEmails={adhocEmails}
-            selectedGroups={selectedGroups}
-            setSelectedGroups={setSelectedGroups}
-            setAdhocEmails={setAdhocEmails}
-          />
+          <div className="module-card">
+            <EmailGroups
+              emailData={emailData}
+              adhocEmails={adhocEmails}
+              selectedGroups={selectedGroups}
+              setSelectedGroups={setSelectedGroups}
+              setAdhocEmails={setAdhocEmails}
+            />
+          </div>
         )}
+
         {tab === 'contact' && (
-          <ContactSearch contactData={contactData} addAdhocEmail={addAdhocEmail} />
+          <div className="module-card">
+            <ContactSearch contactData={contactData} addAdhocEmail={addAdhocEmail} />
+          </div>
         )}
+
         {radarMounted && (
-          <div style={{ display: tab === 'radar' ? 'block' : 'none', height: '100%' }}>
+          <div
+            className="module-card module-card--radar"
+            style={{ display: tab === 'radar' ? 'flex' : 'none' }}
+          >
             <DispatcherRadar />
           </div>
         )}
-      </div>
+      </main>
     </div>
   )
 }

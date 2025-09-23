@@ -45,7 +45,7 @@ const EmailGroups = ({
 
   const groupMap = useMemo(
     () => new Map(groups.map((g) => [g.name, g.emails])),
-    [groups]
+    [groups],
   )
 
   const mergedEmails = useMemo(() => {
@@ -56,10 +56,10 @@ const EmailGroups = ({
   const toggleSelect = useCallback(
     (name) => {
       setSelectedGroups((prev) =>
-        prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
+        prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name],
       )
     },
-    [setSelectedGroups]
+    [setSelectedGroups],
   )
 
   const clearAll = useCallback(() => {
@@ -99,106 +99,106 @@ const EmailGroups = ({
     const title = `${now.getMonth() + 1}/${now.getDate()}`
     const url =
       `https://teams.microsoft.com/l/meeting/new?subject=${encodeURIComponent(
-        title
+        title,
       )}&attendees=${encodeURIComponent(mergedEmails.join(','))}`
     window.nocListAPI?.openExternal?.(url)
     toast.success('Opening Teams meeting')
   }, [mergedEmails])
 
-  return (
-    <div>
-        <div className="sticky-header" style={{ '--sticky-padding': '1.5rem' }}>
-          <div className="mb-1-5">
-            <button
-              onClick={() => window.nocListAPI?.openFile?.('groups.xlsx')}
-              className="btn btn-secondary"
-            >
-              Open Email Groups Excel
-            </button>
-          </div>
+  const listHeight = useMemo(
+    () => Math.min(Math.max(filteredGroups.length * 60, 240), 420),
+    [filteredGroups.length],
+  )
 
-          <div className="stack-on-small align-center gap-0-5 mb-1-5">
-            <div className="input-wrapper">
-              <input
-                type="text"
-                placeholder="Search groups..."
-                value={searchInput}
-                onChange={e => setSearchInput(e.target.value)}
-                className="input search-input"
-              />
-              {searchInput && (
-                <button
-                  onClick={() => {
-                    setSearchInput('')
-                    setSearch('')
-                  }}
-                  className="clear-btn"
-                  title="Clear search"
-                >
-                  ✕
-                </button>
-              )}
+  return (
+    <div className="email-groups">
+      <div className="sticky-header">
+        <div className="stack-on-small align-center gap-0-5 mb-1">
+          <button
+            onClick={() => window.nocListAPI?.openFile?.('groups.xlsx')}
+            className="btn btn-secondary"
+          >
+            Open Email Groups Excel
+          </button>
+          <div className="input-wrapper">
+            <input
+              type="text"
+              placeholder="Search groups..."
+              value={searchInput}
+              onChange={e => setSearchInput(e.target.value)}
+              className="input search-input"
+            />
+            {searchInput && (
+              <button
+                onClick={() => {
+                  setSearchInput('')
+                  setSearch('')
+                }}
+                className="clear-btn"
+                title="Clear search"
+              >
+                ✕
+              </button>
+            )}
           </div>
         </div>
+        <p className="small-muted m-0">
+          Tap a group to add it to the combined mailing list below.
+        </p>
       </div>
 
-      <div className="mb-1-5">
-        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-          <List
-            height={Math.min(filteredGroups.length * 40, 400)}
-            itemCount={filteredGroups.length}
-            itemSize={40}
-            width="100%"
-            className="minimal-scrollbar"
-          >
+      <div className="list-surface minimal-scrollbar">
+        {filteredGroups.length > 0 ? (
+          <List height={listHeight} itemCount={filteredGroups.length} itemSize={60} width="100%">
             {({ index, style }) => {
               const group = filteredGroups[index]
               return (
-                <div style={style}>
+                <div
+                  style={{ ...style, padding: '0 0.25rem 0.65rem' }}
+                  className="virtual-button-row"
+                >
                   <button
                     onClick={() => toggleSelect(group.name)}
-                    className={`btn fade-in ${selectedGroups.includes(group.name) ? 'active' : ''}`}
-                    style={{ width: '100%', justifyContent: 'flex-start' }}
+                    className={`list-item-button ${
+                      selectedGroups.includes(group.name) ? 'is-selected' : ''
+                    }`}
                   >
-                    {group.name}
-                    <span
-                      style={{ marginLeft: '0.25rem', fontSize: '0.8rem', color: 'var(--text-light)' }}
-                    >
-                      ({group.emails.length})
-                    </span>
+                    <span>{group.name}</span>
+                    <span className="item-count">{group.emails.length} contacts</span>
                   </button>
                 </div>
               )
             }}
           </List>
-          {(selectedGroups.length > 0 || adhocEmails.length > 0) && (
-            <button onClick={clearAll} className="btn btn-secondary fade-in mt-0-5">
-              Clear All
-            </button>
-          )}
-        </div>
+        ) : (
+          <div className="empty-state">No groups match your search.</div>
+        )}
+
+        {(selectedGroups.length > 0 || adhocEmails.length > 0) && (
+          <button onClick={clearAll} className="btn btn-secondary mt-0-5">
+            Clear All
+          </button>
+        )}
       </div>
 
       {mergedEmails.length > 0 && (
         <>
-            <div className="flex flex-wrap gap-0-5 mb-0-5">
-              <button onClick={copyToClipboard} className="btn fade-in">
-                Copy Email List
-              </button>
-              <button onClick={launchTeams} className="btn btn-secondary fade-in">
-                Start Teams Meeting
-              </button>
-              {copied && <span className="self-center" style={{ color: 'lightgreen' }}>Copied</span>}
-            </div>
-            <div style={{ background: 'var(--bg-secondary)', padding: '1rem', borderRadius: '4px', color: 'var(--text-light)' }}>
-              <strong>Merged Emails:</strong>
-              <div className="break-word mt-0-5">
-                {mergedEmails.join(', ')}
-              </div>
-            </div>
-          </>
-        )}
-      </div>
+          <div className="email-actions">
+            <button onClick={copyToClipboard} className="btn">
+              Copy Email List
+            </button>
+            <button onClick={launchTeams} className="btn btn-secondary">
+              Start Teams Meeting
+            </button>
+            {copied && <span className="copied-indicator">Copied</span>}
+          </div>
+          <div className="email-output">
+            <strong>Merged Emails:</strong>
+            <div className="break-word mt-0-5">{mergedEmails.join(', ')}</div>
+          </div>
+        </>
+      )}
+    </div>
   )
 }
 

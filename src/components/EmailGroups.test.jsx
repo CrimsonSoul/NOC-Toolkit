@@ -56,4 +56,30 @@ describe('EmailGroups', () => {
     await user.click(clear)
     expect(screen.getByRole('button', { name: /Group A/i })).not.toHaveClass('is-selected')
   })
+
+  it('shows ad-hoc email chips and allows removing them', async () => {
+    const user = userEvent.setup()
+
+    function Wrapper() {
+      const [selected, setSelected] = useState([])
+      const [adhoc, setAdhoc] = useState(['solo@example.com'])
+      return (
+        <EmailGroups
+          emailData={sampleData}
+          adhocEmails={adhoc}
+          selectedGroups={selected}
+          setSelectedGroups={setSelected}
+          setAdhocEmails={setAdhoc}
+        />
+      )
+    }
+
+    render(<Wrapper />)
+    const removeButton = screen.getByRole('button', { name: /remove solo@example.com/i })
+    expect(removeButton).toBeInTheDocument()
+    await user.click(removeButton)
+    expect(
+      screen.queryByRole('button', { name: /remove solo@example.com/i })
+    ).not.toBeInTheDocument()
+  })
 })

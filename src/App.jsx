@@ -237,7 +237,7 @@ function App() {
           <div className="module-card">
             <ContactSearch
               contactData={contactData}
-              addAdhocEmail={(email) => addAdhocEmail(email, { switchToEmailTab: true })}
+              addAdhocEmail={addAdhocEmail}
             />
           </div>
         )}

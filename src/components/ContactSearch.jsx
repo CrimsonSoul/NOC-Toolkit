@@ -4,6 +4,8 @@ import React, {
   useDeferredValue,
   useRef,
   useEffect,
+  memo,
+  useCallback,
 } from 'react'
 import { toast } from 'react-hot-toast'
 import { FixedSizeList as List } from 'react-window'
@@ -13,7 +15,7 @@ import { formatPhones } from '../utils/formatPhones'
  * Provide a searchable list of contacts with quick email adding.
  * @param {Object} props
  * @param {Array} props.contactData - Parsed contact rows.
- * @param {(email: string) => void} props.addAdhocEmail - Callback to add emails.
+ * @param {(email: string, options?: { switchToEmailTab?: boolean }) => boolean} props.addAdhocEmail - Callback to add emails.
  */
 const ContactSearch = ({ contactData, addAdhocEmail }) => {
   const [query, setQuery] = useState('')
@@ -55,91 +57,118 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
     return () => window.removeEventListener('resize', updateHeight)
   }, [])
 
-  const handleNav = (direction) => {
-    setActiveIndex((prev) => {
-      const next = direction === 'down' ? prev + 1 : prev - 1
-      const clamped = Math.max(0, Math.min(filtered.length - 1, next))
-      listRef.current?.scrollToItem(clamped)
-      return clamped
-    })
-  }
+  const handleNav = useCallback(
+    (direction) => {
+      setActiveIndex((prev) => {
+        const next = direction === 'down' ? prev + 1 : prev - 1
+        const clamped = Math.max(0, Math.min(filtered.length - 1, next))
+        listRef.current?.scrollToItem(clamped)
+        return clamped
+      })
+    },
+    [filtered.length],
+  )
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      handleNav('down')
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      handleNav('up')
-    }
-  }
-
-  const renderContact = ({ index, style }) => {
-    const contact = filtered[index]
-    const initials = contact.Name
-      ? contact.Name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
-      : '?'
-    const emailAddress = [
-      contact.Email,
-      contact.EmailAddress,
-      contact['Email Address'],
-      contact.email,
-      contact['E-mail'],
-    ]
-      .map((value) => (typeof value === 'string' ? value.trim() : ''))
-      .find(Boolean)
-
-    const handleAddToList = () => {
-      if (emailAddress) {
-        addAdhocEmail(emailAddress)
-      } else {
-        toast.error('No email address available for this contact')
+  const handleKeyDown = useCallback(
+    (e) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        handleNav('down')
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        handleNav('up')
       }
-    }
+    },
+    [handleNav],
+  )
 
-    return (
-      <div style={{ ...style, padding: '0.5rem 0.5rem' }} className="virtual-row">
-        <article className="contact-card">
-          <div className="contact-card__header">
-            <div className="contact-card__avatar">{initials}</div>
-            <div>
-              <h3 className="contact-card__name">{contact.Name}</h3>
-              {contact.Title && <p className="contact-card__title">{contact.Title}</p>}
+  const renderContact = useCallback(
+    ({ index, style }) => {
+      const contact = filtered[index]
+      if (!contact) return null
+
+      const initials = contact.Name
+        ? contact.Name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
+        : '?'
+      const emailAddress = [
+        contact.Email,
+        contact.EmailAddress,
+        contact['Email Address'],
+        contact.email,
+        contact['E-mail'],
+      ]
+        .map((value) => (typeof value === 'string' ? value.trim() : ''))
+        .find(Boolean)
+
+      const handleAddToList = () => {
+        if (emailAddress) {
+          addAdhocEmail(emailAddress, { switchToEmailTab: true })
+        } else {
+          toast.error('No email address available for this contact')
+        }
+      }
+
+      return (
+        <div style={{ ...style, padding: '0.5rem 0.5rem' }} className="virtual-row">
+          <article className="contact-card">
+            <div className="contact-card__header">
+              <div className="contact-card__avatar">{initials}</div>
+              <div>
+                <h3 className="contact-card__name">{contact.Name}</h3>
+                {contact.Title && <p className="contact-card__title">{contact.Title}</p>}
+              </div>
             </div>
-          </div>
 
-          <div className="contact-card__row">
-            <span className="label">Email</span>
-            {emailAddress ? (
-              <a href={`mailto:${emailAddress}`} style={{ whiteSpace: 'nowrap' }}>
-                {emailAddress}
-              </a>
-            ) : (
-              <span>N/A</span>
-            )}
-          </div>
-          <div className="contact-card__row">
-            <span className="label">Phone</span>
-            <span>{formatPhones(contact.Phone) || 'N/A'}</span>
-          </div>
+            <div className="contact-card__row">
+              <span className="label">Email</span>
+              {emailAddress ? (
+                <a href={`mailto:${emailAddress}`} style={{ whiteSpace: 'nowrap' }}>
+                  {emailAddress}
+                </a>
+              ) : (
+                <span>N/A</span>
+              )}
+            </div>
+            <div className="contact-card__row">
+              <span className="label">Phone</span>
+              <span>{formatPhones(contact.Phone) || 'N/A'}</span>
+            </div>
 
-          <div className="contact-card__actions">
-            <button
-              ref={(el) => (itemRefs.current[index] = el)}
-              onClick={handleAddToList}
-              className="btn btn-ghost btn-small"
-              onKeyDown={handleKeyDown}
-              onFocus={() => setActiveIndex(index)}
-              type="button"
-              disabled={!emailAddress}
-            >
-              {emailAddress ? 'Add to Email List' : 'Email Unavailable'}
-            </button>
-          </div>
-        </article>
-      </div>
-    )
-  }
+            <div className="contact-card__actions">
+              <button
+                ref={(el) => (itemRefs.current[index] = el)}
+                onClick={handleAddToList}
+                className="btn btn-ghost btn-small"
+                onKeyDown={handleKeyDown}
+                onFocus={() => setActiveIndex(index)}
+                type="button"
+                disabled={!emailAddress}
+              >
+                {emailAddress ? 'Add to Email List' : 'Email Unavailable'}
+              </button>
+            </div>
+          </article>
+        </div>
+      )
+    },
+    [addAdhocEmail, filtered, handleKeyDown],
+  )
+
+  const itemKey = useCallback(
+    (index) => {
+      const contact = filtered[index]
+      return (
+        contact?.Email ||
+        contact?.EmailAddress ||
+        contact?.['Email Address'] ||
+        contact?.email ||
+        contact?.['E-mail'] ||
+        contact?.Name ||
+        index
+      )
+    },
+    [filtered],
+  )
 
   return (
     <div className="contact-search">
@@ -188,6 +217,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
             itemSize={CONTACT_ITEM_HEIGHT}
             width="100%"
             ref={listRef}
+            itemKey={itemKey}
           >
             {renderContact}
           </List>
@@ -199,4 +229,4 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
   )
 }
 
-export default ContactSearch
+export default memo(ContactSearch)

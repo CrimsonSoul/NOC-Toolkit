@@ -41,6 +41,6 @@ describe('ContactSearch', () => {
     const secondBtn = screen.getAllByText(/add to email list/i)[1]
     expect(secondBtn).toHaveFocus()
     fireEvent.click(secondBtn)
-    expect(add).toHaveBeenCalledWith('agent1@example.com')
+    expect(add).toHaveBeenCalledWith('agent1@example.com', { switchToEmailTab: true })
   })
 })

@@ -172,43 +172,47 @@ function App() {
       <Toaster position="top-right" toastOptions={toastOptions} />
 
       <header className="app-header" ref={headerRef}>
-        <div className="app-header-row">
-          <div className="app-brand">
-            {logoAvailable ? (
-              <img src="logo.png" alt="NOC List logo" className="app-logo" />
-            ) : (
-              <div className="app-logo-fallback" aria-label="NOC List logo">
-                <span>NOC</span>
-                <span>LIST</span>
+        <div className="app-header-card">
+          <div className="app-identity">
+            <div className="app-brand">
+              {logoAvailable ? (
+                <img src="logo.png" alt="NOC List logo" className="app-logo" />
+              ) : (
+                <div className="app-logo-fallback" aria-label="NOC List logo">
+                  <span>NOC</span>
+                  <span>LIST</span>
+                </div>
+              )}
+            </div>
+            <div className="app-identity__meta status-panel">
+              <div className="status-panel__block">
+                <CodeDisplay
+                  currentCode={currentCode}
+                  previousCode={previousCode}
+                  progressKey={progressKey}
+                  intervalMs={intervalMs}
+                />
+              </div>
+              <div className="status-panel__divider" aria-hidden="true" />
+              <div className="status-panel__block">
+                <WeatherClock />
+              </div>
+            </div>
+          </div>
+
+          <div className="app-header-controls">
+            <TabSelector tab={tab} setTab={setTab} />
+
+            {tab !== 'radar' && (
+              <div className="app-toolbar">
+                <button onClick={refreshData} className="btn">
+                  Refresh Data
+                </button>
+                <span className="app-toolbar-meta">Last refreshed: {lastRefresh}</span>
               </div>
             )}
           </div>
-          <div className="app-meta-card status-panel">
-            <div className="status-panel__block">
-              <CodeDisplay
-                currentCode={currentCode}
-                previousCode={previousCode}
-                progressKey={progressKey}
-                intervalMs={intervalMs}
-              />
-            </div>
-            <div className="status-panel__divider" aria-hidden="true" />
-            <div className="status-panel__block">
-              <WeatherClock />
-            </div>
-          </div>
         </div>
-
-        <TabSelector tab={tab} setTab={setTab} />
-
-        {tab !== 'radar' && (
-          <div className="app-toolbar">
-            <button onClick={refreshData} className="btn">
-              Refresh Data
-            </button>
-            <span className="app-toolbar-meta">Last refreshed: {lastRefresh}</span>
-          </div>
-        )}
       </header>
 
       <main className="app-main">

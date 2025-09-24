@@ -21,6 +21,7 @@ const EmailGroups = ({
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [removedEmails, setRemovedEmails] = useState([])
+  const [removedManualEmails, setRemovedManualEmails] = useState([])
   const timeoutRef = useRef(null)
 
   const groups = useMemo(() => {
@@ -79,7 +80,8 @@ const EmailGroups = ({
     setSelectedGroups([])
     setAdhocEmails([])
     setRemovedEmails([])
-  }, [setSelectedGroups, setAdhocEmails])
+    setRemovedManualEmails([])
+  }, [setSelectedGroups, setAdhocEmails, setRemovedManualEmails])
 
   const copyToClipboard = useCallback(async () => {
     if (activeEmails.length === 0) return
@@ -123,16 +125,35 @@ const EmailGroups = ({
     (email) => {
       if (adhocEmails.includes(email)) {
         setAdhocEmails((prev) => prev.filter((item) => item !== email))
+        setRemovedManualEmails((prev) => (prev.includes(email) ? prev : [...prev, email]))
       } else {
         setRemovedEmails((prev) => (prev.includes(email) ? prev : [...prev, email]))
       }
     },
-    [adhocEmails, setAdhocEmails, setRemovedEmails],
+    [adhocEmails, setAdhocEmails, setRemovedEmails, setRemovedManualEmails],
   )
 
   const restoreRemovedEmails = useCallback(() => {
     setRemovedEmails([])
-  }, [setRemovedEmails])
+    if (removedManualEmails.length > 0) {
+      setAdhocEmails((prev) => {
+        const merged = new Set(prev)
+        removedManualEmails.forEach((email) => merged.add(email))
+        return Array.from(merged)
+      })
+      setRemovedManualEmails([])
+    }
+  }, [removedManualEmails, setAdhocEmails, setRemovedManualEmails])
+
+  useEffect(() => {
+    setRemovedManualEmails((prev) => {
+      if (!prev.length) return prev
+      const restored = prev.filter((email) => !adhocEmails.includes(email))
+      return restored.length === prev.length ? prev : restored
+    })
+  }, [adhocEmails])
+
+  const hasRemovedEmails = removedEmails.length > 0 || removedManualEmails.length > 0
 
   return (
     <div className="email-groups">
@@ -226,12 +247,18 @@ const EmailGroups = ({
             ))}
           </div>
           <p className="small-muted m-0">Tap an email to remove it from the list.</p>
-          {removedEmails.length > 0 && (
+          {hasRemovedEmails && (
             <button onClick={restoreRemovedEmails} className="btn btn-ghost">
               Restore Removed Emails
             </button>
           )}
         </>
+      )}
+
+      {hasRemovedEmails && activeEmails.length === 0 && (
+        <button onClick={restoreRemovedEmails} className="btn btn-ghost">
+          Restore Removed Emails
+        </button>
       )}
     </div>
   )

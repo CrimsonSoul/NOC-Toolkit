@@ -15,7 +15,7 @@ afterEach(() => cleanup())
 describe('ContactSearch', () => {
   it('filters contacts without crashing on non-string values', () => {
     render(
-      <ContactSearch contactData={contacts} addAdhocEmail={() => {}} />
+      <ContactSearch contactData={contacts} addAdhocEmail={() => 'added'} />
     )
     const input = screen.getByPlaceholderText(/search contacts/i)
     fireEvent.change(input, { target: { value: 'Agent 1' } })
@@ -24,14 +24,14 @@ describe('ContactSearch', () => {
 
   it('virtualizes the contact list', () => {
     render(
-      <ContactSearch contactData={contacts} addAdhocEmail={() => {}} />
+      <ContactSearch contactData={contacts} addAdhocEmail={() => 'added'} />
     )
     const buttons = screen.getAllByText(/add to email list/i)
     expect(buttons.length).toBeLessThan(contacts.length)
   })
 
   it('supports keyboard navigation and add action', () => {
-    const add = vi.fn()
+    const add = vi.fn(() => 'added')
     render(<ContactSearch contactData={contacts} addAdhocEmail={add} />)
     const input = screen.getByPlaceholderText(/search contacts/i)
     fireEvent.keyDown(input, { key: 'ArrowDown' })
@@ -42,5 +42,22 @@ describe('ContactSearch', () => {
     expect(secondBtn).toHaveFocus()
     fireEvent.click(secondBtn)
     expect(add).toHaveBeenCalledWith('agent1@example.com', { switchToEmailTab: true })
+  })
+
+  it('extracts email from complex fields when adding to the list', () => {
+    const add = vi.fn(() => 'added')
+    const complexContacts = [
+      {
+        Name: 'Dana Contact',
+        'Primary Email Address': 'Dana Contact <dana@example.com>',
+      },
+    ]
+
+    render(<ContactSearch contactData={complexContacts} addAdhocEmail={add} />)
+
+    const button = screen.getByText(/add to email list/i)
+    fireEvent.click(button)
+
+    expect(add).toHaveBeenCalledWith('dana@example.com', { switchToEmailTab: true })
   })
 })

@@ -1,6 +1,5 @@
 import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
-import { FixedSizeList as List } from 'react-window'
 
 /**
  * Manage selection of email groups and creation of merged mailing lists.
@@ -105,11 +104,11 @@ const EmailGroups = ({
     toast.success('Opening Teams meeting')
   }, [mergedEmails])
 
-  const GROUP_ITEM_HEIGHT = 80
-
-  const listHeight = useMemo(
-    () => Math.min(Math.max(filteredGroups.length * GROUP_ITEM_HEIGHT, 240), 420),
-    [filteredGroups.length],
+  const removeAdhocEmail = useCallback(
+    (email) => {
+      setAdhocEmails((prev) => prev.filter((item) => item !== email))
+    },
+    [setAdhocEmails],
   )
 
   return (
@@ -151,32 +150,20 @@ const EmailGroups = ({
 
       <div className="list-surface minimal-scrollbar">
         {filteredGroups.length > 0 ? (
-          <List
-            height={listHeight}
-            itemCount={filteredGroups.length}
-            itemSize={GROUP_ITEM_HEIGHT}
-            width="100%"
-          >
-            {({ index, style }) => {
-              const group = filteredGroups[index]
-              return (
-                <div
-                  style={{ ...style, padding: '0.35rem 0.25rem' }}
-                  className="virtual-button-row"
-                >
-                  <button
-                    onClick={() => toggleSelect(group.name)}
-                    className={`list-item-button ${
-                      selectedGroups.includes(group.name) ? 'is-selected' : ''
-                    }`}
-                  >
-                    <span>{group.name}</span>
-                    <span className="item-count">{group.emails.length} contacts</span>
-                  </button>
-                </div>
-              )
-            }}
-          </List>
+          <div className="group-grid">
+            {filteredGroups.map((group) => (
+              <button
+                key={group.name}
+                onClick={() => toggleSelect(group.name)}
+                className={`list-item-button ${
+                  selectedGroups.includes(group.name) ? 'is-selected' : ''
+                }`}
+              >
+                <span>{group.name}</span>
+                <span className="item-count">{group.emails.length} contacts</span>
+              </button>
+            ))}
+          </div>
         ) : (
           <div className="empty-state">No groups match your search.</div>
         )}
@@ -187,6 +174,33 @@ const EmailGroups = ({
           </button>
         )}
       </div>
+
+      {adhocEmails.length > 0 && (
+        <div className="adhoc-email-panel">
+          <div className="adhoc-email-panel__header">
+            <strong>Ad-hoc Emails</strong>
+            <span className="badge">{adhocEmails.length}</span>
+          </div>
+          <div className="adhoc-email-panel__list">
+            {adhocEmails.map((email) => (
+              <button
+                key={email}
+                type="button"
+                className="adhoc-chip"
+                onClick={() => removeAdhocEmail(email)}
+                title={`Remove ${email}`}
+              >
+                <span className="adhoc-chip__text">{email}</span>
+                <span aria-hidden="true" className="adhoc-chip__remove">
+                  ×
+                </span>
+                <span className="sr-only">Remove {email}</span>
+              </button>
+            ))}
+          </div>
+          <p className="small-muted m-0">Tap an email to remove it from the list.</p>
+        </div>
+      )}
 
       {mergedEmails.length > 0 && (
         <>

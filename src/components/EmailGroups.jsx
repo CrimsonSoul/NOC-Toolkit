@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react'
+import React, { useMemo, useState, useCallback, useRef, useEffect, memo } from 'react'
 import { toast } from 'react-hot-toast'
 
 /**
@@ -223,4 +223,4 @@ const EmailGroups = ({
   )
 }
 
-export default EmailGroups
+export default memo(EmailGroups)

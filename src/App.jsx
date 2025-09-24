@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react'
+import React, { useEffect, useState, useCallback, useMemo, useRef, useLayoutEffect } from 'react'
 import EmailGroups from './components/EmailGroups'
 import ContactSearch from './components/ContactSearch'
 import CodeDisplay from './components/CodeDisplay'
@@ -18,6 +18,7 @@ function App() {
   const [logoAvailable, setLogoAvailable] = useState(false)
   const [radarMounted, setRadarMounted] = useState(tab === 'radar')
   const { currentCode, previousCode, progressKey, intervalMs } = useRotatingCode()
+  const headerRef = useRef(null)
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -75,16 +76,63 @@ function App() {
 
   /** Add a user-provided email to the current ad-hoc list if valid. */
   const addAdhocEmail = useCallback(
-    (email) => {
-      if (isValidEmail(email)) {
-        setAdhocEmails((prev) => [...new Set([...prev, email])])
-        toast.success(`Added ${email}`)
-      } else {
+    (email, { switchToEmailTab = false } = {}) => {
+      const cleaned = typeof email === 'string' ? email.trim() : ''
+      const normalized = cleaned.toLowerCase()
+
+      if (!cleaned || !isValidEmail(cleaned)) {
         toast.error('Invalid email address')
+        return false
       }
+
+      let added = false
+      setAdhocEmails((prev) => {
+        if (prev.some((existing) => existing.toLowerCase() === normalized)) {
+          return prev
+        }
+        added = true
+        return [...prev, cleaned]
+      })
+
+      if (added) {
+        toast.success(`Added ${cleaned}`)
+        if (switchToEmailTab) {
+          setTab('email')
+        }
+      } else {
+        toast('Email already in list', { icon: 'ℹ️' })
+      }
+
+      return added
     },
-    [isValidEmail],
+    [isValidEmail, setTab],
   )
+
+  useLayoutEffect(() => {
+    const updateHeaderOffset = () => {
+      const computedStyles = getComputedStyle(document.documentElement)
+      const shellGap = parseFloat(computedStyles.getPropertyValue('--app-shell-gap') || '0')
+      const headerHeight = headerRef.current?.offsetHeight ?? 0
+      const offset = headerHeight + shellGap
+      document.documentElement.style.setProperty('--app-header-offset', `${Math.round(offset)}px`)
+    }
+
+    updateHeaderOffset()
+
+    const resizeObserver =
+      typeof ResizeObserver !== 'undefined' && headerRef.current
+        ? new ResizeObserver(updateHeaderOffset)
+        : null
+
+    resizeObserver?.observe(headerRef.current)
+
+    window.addEventListener('resize', updateHeaderOffset)
+
+    return () => {
+      window.removeEventListener('resize', updateHeaderOffset)
+      resizeObserver?.disconnect()
+    }
+  }, [])
 
   useEffect(() => {
     localStorage.setItem('activeTab', tab)
@@ -126,7 +174,7 @@ function App() {
     <div className="app-shell fade-in">
       <Toaster position="top-right" toastOptions={toastOptions} />
 
-      <header className="app-header">
+      <header className="app-header" ref={headerRef}>
         <div className="app-header-row">
           <div className="app-brand">
             {logoAvailable ? (
@@ -187,7 +235,10 @@ function App() {
 
         {tab === 'contact' && (
           <div className="module-card">
-            <ContactSearch contactData={contactData} addAdhocEmail={addAdhocEmail} />
+            <ContactSearch
+              contactData={contactData}
+              addAdhocEmail={(email) => addAdhocEmail(email, { switchToEmailTab: true })}
+            />
           </div>
         )}
 

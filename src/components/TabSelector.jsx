@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { memo } from 'react'
 
 /**
  * Renders the Email/Contact tab selector.
@@ -34,4 +34,4 @@ const TabSelector = ({ tab, setTab }) => (
   </div>
 )
 
-export default TabSelector
+export default memo(TabSelector)

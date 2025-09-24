@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, memo } from 'react'
 
 /**
  * Embeds the Dispatcher Radar page and provides a fallback if it fails to load.
@@ -35,4 +35,4 @@ const DispatcherRadar = () => {
   )
 }
 
-export default DispatcherRadar
+export default memo(DispatcherRadar)

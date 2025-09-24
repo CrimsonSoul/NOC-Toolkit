@@ -4,12 +4,10 @@ import React, {
   useDeferredValue,
   useRef,
   useEffect,
-  useLayoutEffect,
   memo,
   useCallback,
 } from 'react'
 import { toast } from 'react-hot-toast'
-import { FixedSizeList as List } from 'react-window'
 import { formatPhones } from '../utils/formatPhones'
 
 const EMAIL_FIELDS = [
@@ -71,13 +69,9 @@ const findEmailAddress = (contact) => {
 const ContactSearch = ({ contactData, addAdhocEmail }) => {
   const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query)
-  const listRef = useRef(null)
-  const listContainerRef = useRef(null)
-  const itemRefs = useRef({})
+  const searchInputRef = useRef(null)
+  const itemRefs = useRef([])
   const [activeIndex, setActiveIndex] = useState(-1)
-  const [listHeight, setListHeight] = useState(400)
-  const CONTACT_ITEM_HEIGHT = 220
-  const MIN_LIST_HEIGHT = CONTACT_ITEM_HEIGHT * 1.2
 
   const indexedContacts = useMemo(
     () =>
@@ -93,184 +87,60 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
     return indexedContacts.filter((c) => c._search.includes(q))
   }, [deferredQuery, indexedContacts])
 
+  const getContactKey = useCallback((contact, index) => {
+    return (
+      contact?.Email ||
+      contact?.EmailAddress ||
+      contact?.['Email Address'] ||
+      contact?.email ||
+      contact?.['E-mail'] ||
+      contact?.Name ||
+      index
+    )
+  }, [])
+
   useEffect(() => {
     if (activeIndex >= 0) {
       const btn = itemRefs.current[activeIndex]
-      btn?.focus()
+      if (btn) {
+        btn.focus()
+        btn.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' })
+      }
     }
   }, [activeIndex, filtered])
 
-  const updateHeight = useCallback(() => {
-    const listElement = listContainerRef.current
-    if (!listElement || typeof window === 'undefined') {
-      setListHeight(MIN_LIST_HEIGHT)
-      return
-    }
-
-    const measure = () => {
-      const rootStyles = getComputedStyle(document.documentElement)
-      const shellGap = parseFloat(rootStyles.getPropertyValue('--app-shell-gap') || '0')
-
-      const moduleCard = listElement.closest('.module-card')
-      const moduleStyles = moduleCard ? getComputedStyle(moduleCard) : null
-      const modulePaddingBottom = moduleStyles
-        ? parseFloat(moduleStyles.getPropertyValue('padding-bottom') || '0')
-        : 0
-
-      const { top } = listElement.getBoundingClientRect()
-      const safeSpacing = shellGap + modulePaddingBottom + 24
-      const availableHeight = window.innerHeight - top - safeSpacing
-
-      if (Number.isFinite(availableHeight)) {
-        setListHeight(Math.max(MIN_LIST_HEIGHT, availableHeight))
-      } else {
-        setListHeight(MIN_LIST_HEIGHT)
-      }
-    }
-
-    if (typeof window.requestAnimationFrame === 'function') {
-      window.requestAnimationFrame(measure)
-    } else {
-      measure()
-    }
-  }, [MIN_LIST_HEIGHT])
-
-  useLayoutEffect(() => {
-    updateHeight()
-
-    const handleResize = () => updateHeight()
-    window.addEventListener('resize', handleResize)
-
-    const moduleCard = listContainerRef.current?.closest('.module-card')
-    let resizeObserver
-
-    if (moduleCard && typeof window !== 'undefined' && 'ResizeObserver' in window) {
-      resizeObserver = new ResizeObserver(() => updateHeight())
-      resizeObserver.observe(moduleCard)
-    }
-
-    return () => {
-      window.removeEventListener('resize', handleResize)
-      resizeObserver?.disconnect()
-    }
-  }, [updateHeight])
+  useEffect(() => {
+    itemRefs.current = []
+  }, [filtered])
 
   useEffect(() => {
-    updateHeight()
-  }, [filtered.length, updateHeight])
-
-  const handleNav = useCallback(
-    (direction) => {
-      setActiveIndex((prev) => {
-        const next = direction === 'down' ? prev + 1 : prev - 1
-        const clamped = Math.max(0, Math.min(filtered.length - 1, next))
-        listRef.current?.scrollToItem(clamped)
-        return clamped
-      })
-    },
-    [filtered.length],
-  )
+    if (activeIndex >= filtered.length) {
+      setActiveIndex(filtered.length ? filtered.length - 1 : -1)
+    }
+  }, [activeIndex, filtered.length])
 
   const handleKeyDown = useCallback(
-    (e) => {
+    (e, index) => {
       if (e.key === 'ArrowDown') {
         e.preventDefault()
-        handleNav('down')
+        setActiveIndex(() => {
+          const nextIndex = Math.min(filtered.length - 1, index + 1)
+          return filtered.length ? nextIndex : -1
+        })
       } else if (e.key === 'ArrowUp') {
         e.preventDefault()
-        handleNav('up')
-      }
-    },
-    [handleNav],
-  )
-
-  const renderContact = useCallback(
-    ({ index, style }) => {
-      const contact = filtered[index]
-      if (!contact) return null
-
-      const initials = contact.Name
-        ? contact.Name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
-        : '?'
-      const emailAddress = findEmailAddress(contact)
-
-      const handleAddToList = () => {
-        if (!emailAddress) {
-          toast.error('No email address available for this contact')
-          return
-        }
-
-        const result = addAdhocEmail(emailAddress, { switchToEmailTab: true })
-
-        if (result === 'added') {
-          toast.success(`Added ${emailAddress} to the list`)
-        } else if (result === 'duplicate') {
-          toast('Email already in list', { icon: 'ℹ️' })
+        if (index === 0) {
+          setActiveIndex(-1)
+          searchInputRef.current?.focus()
         } else {
-          toast.error('Invalid email address')
+          setActiveIndex(() => {
+            const nextIndex = Math.max(0, index - 1)
+            return filtered.length ? nextIndex : -1
+          })
         }
       }
-
-      return (
-        <div style={{ ...style, padding: '0.5rem 0.5rem' }} className="virtual-row">
-          <article className="contact-card">
-            <div className="contact-card__header">
-              <div className="contact-card__avatar">{initials}</div>
-              <div>
-                <h3 className="contact-card__name">{contact.Name}</h3>
-                {contact.Title && <p className="contact-card__title">{contact.Title}</p>}
-              </div>
-            </div>
-
-            <div className="contact-card__row">
-              <span className="label">Email</span>
-              {emailAddress ? (
-                <a href={`mailto:${emailAddress}`} style={{ whiteSpace: 'nowrap' }}>
-                  {emailAddress}
-                </a>
-              ) : (
-                <span>N/A</span>
-              )}
-            </div>
-            <div className="contact-card__row">
-              <span className="label">Phone</span>
-              <span>{formatPhones(contact.Phone) || 'N/A'}</span>
-            </div>
-
-            <div className="contact-card__actions">
-              <button
-                ref={(el) => (itemRefs.current[index] = el)}
-                onClick={handleAddToList}
-                className="btn btn-ghost btn-small"
-                onKeyDown={handleKeyDown}
-                onFocus={() => setActiveIndex(index)}
-                type="button"
-                disabled={!emailAddress}
-              >
-                {emailAddress ? 'Add to Email List' : 'Email Unavailable'}
-              </button>
-            </div>
-          </article>
-        </div>
-      )
     },
-    [addAdhocEmail, filtered, handleKeyDown],
-  )
-
-  const itemKey = useCallback(
-    (index) => {
-      const contact = filtered[index]
-      return (
-        contact?.Email ||
-        contact?.EmailAddress ||
-        contact?.['Email Address'] ||
-        contact?.email ||
-        contact?.['E-mail'] ||
-        contact?.Name ||
-        index
-      )
-    },
-    [filtered],
+    [filtered.length],
   )
 
   return (
@@ -288,6 +158,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
               type="text"
               placeholder="Search contacts..."
               value={query}
+              ref={searchInputRef}
               onChange={e => {
                 setQuery(e.target.value)
                 setActiveIndex(-1)
@@ -296,7 +167,6 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
                 if (e.key === 'ArrowDown' && filtered.length) {
                   e.preventDefault()
                   setActiveIndex(0)
-                  listRef.current?.scrollToItem(0)
                 }
               }}
               className="input rounded-6 search-input"
@@ -313,17 +183,80 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
       </div>
 
       {filtered.length > 0 ? (
-        <div ref={listContainerRef} className="contact-list minimal-scrollbar">
-          <List
-            height={listHeight}
-            itemCount={filtered.length}
-            itemSize={CONTACT_ITEM_HEIGHT}
-            width="100%"
-            ref={listRef}
-            itemKey={itemKey}
-          >
-            {renderContact}
-          </List>
+        <div className="contact-list">
+          {filtered.map((contact, index) => {
+            const initials = contact.Name
+              ? contact.Name.split(' ')
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .map((part) => part[0])
+                  .join('')
+                  .toUpperCase()
+              : '?'
+            const emailAddress = findEmailAddress(contact)
+
+            const handleAddToList = () => {
+              if (!emailAddress) {
+                toast.error('No email address available for this contact')
+                return
+              }
+
+              const result = addAdhocEmail(emailAddress, { switchToEmailTab: true })
+
+              if (result === 'added') {
+                toast.success(`Added ${emailAddress} to the list`)
+              } else if (result === 'duplicate') {
+                toast('Email already in list', { icon: 'ℹ️' })
+              } else {
+                toast.error('Invalid email address')
+              }
+            }
+
+            return (
+              <article key={getContactKey(contact, index)} className="contact-card">
+                <div className="contact-card__header">
+                  <div className="contact-card__avatar">{initials}</div>
+                  <div>
+                    <h3 className="contact-card__name">{contact.Name}</h3>
+                    {contact.Title && <p className="contact-card__title">{contact.Title}</p>}
+                  </div>
+                </div>
+
+                <div className="contact-card__row">
+                  <span className="label">Email</span>
+                  {emailAddress ? (
+                    <a href={`mailto:${emailAddress}`} style={{ whiteSpace: 'nowrap' }}>
+                      {emailAddress}
+                    </a>
+                  ) : (
+                    <span>N/A</span>
+                  )}
+                </div>
+                <div className="contact-card__row">
+                  <span className="label">Phone</span>
+                  <span>{formatPhones(contact.Phone) || 'N/A'}</span>
+                </div>
+
+                <div className="contact-card__actions">
+                  <button
+                    ref={(el) => {
+                      if (el) {
+                        itemRefs.current[index] = el
+                      }
+                    }}
+                    onClick={handleAddToList}
+                    className="btn btn-ghost btn-small"
+                    onKeyDown={(e) => handleKeyDown(e, index)}
+                    onFocus={() => setActiveIndex(index)}
+                    type="button"
+                    disabled={!emailAddress}
+                  >
+                    {emailAddress ? 'Add to Email List' : 'Email Unavailable'}
+                  </button>
+                </div>
+              </article>
+            )
+          })}
         </div>
       ) : (
         <div className="empty-state">No matching contacts.</div>

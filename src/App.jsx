@@ -182,12 +182,6 @@ function App() {
                 <span>LIST</span>
               </div>
             )}
-            <div>
-              <h1 className="app-title">Operations Console</h1>
-              <p className="app-subtitle">
-                Manage contacts, distribution groups, and live monitoring tools
-              </p>
-            </div>
           </div>
           <div className="app-meta-card status-panel">
             <div className="status-panel__block">

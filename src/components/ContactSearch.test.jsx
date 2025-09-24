@@ -22,12 +22,12 @@ describe('ContactSearch', () => {
     expect(screen.getByText('Agent 1')).toBeInTheDocument()
   })
 
-  it('virtualizes the contact list', () => {
+  it('renders the full contact list without virtualization scrollbars', () => {
     render(
       <ContactSearch contactData={contacts} addAdhocEmail={() => 'added'} />
     )
     const buttons = screen.getAllByText(/add to email list/i)
-    expect(buttons.length).toBeLessThan(contacts.length)
+    expect(buttons.length).toBe(contacts.length)
   })
 
   it('supports keyboard navigation and add action', () => {

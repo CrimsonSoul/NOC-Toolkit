@@ -105,8 +105,10 @@ const EmailGroups = ({
     toast.success('Opening Teams meeting')
   }, [mergedEmails])
 
+  const GROUP_ITEM_HEIGHT = 72
+
   const listHeight = useMemo(
-    () => Math.min(Math.max(filteredGroups.length * 60, 240), 420),
+    () => Math.min(Math.max(filteredGroups.length * GROUP_ITEM_HEIGHT, 240), 420),
     [filteredGroups.length],
   )
 
@@ -149,12 +151,17 @@ const EmailGroups = ({
 
       <div className="list-surface minimal-scrollbar">
         {filteredGroups.length > 0 ? (
-          <List height={listHeight} itemCount={filteredGroups.length} itemSize={60} width="100%">
+          <List
+            height={listHeight}
+            itemCount={filteredGroups.length}
+            itemSize={GROUP_ITEM_HEIGHT}
+            width="100%"
+          >
             {({ index, style }) => {
               const group = filteredGroups[index]
               return (
                 <div
-                  style={{ ...style, padding: '0 0.25rem 0.65rem' }}
+                  style={{ ...style, padding: '0.35rem 0.25rem' }}
                   className="virtual-button-row"
                 >
                   <button

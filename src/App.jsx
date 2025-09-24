@@ -144,14 +144,19 @@ function App() {
               </p>
             </div>
           </div>
-          <div className="app-meta-card">
-            <CodeDisplay
-              currentCode={currentCode}
-              previousCode={previousCode}
-              progressKey={progressKey}
-              intervalMs={intervalMs}
-            />
-            <WeatherClock />
+          <div className="app-meta-card status-panel">
+            <div className="status-panel__block">
+              <CodeDisplay
+                currentCode={currentCode}
+                previousCode={previousCode}
+                progressKey={progressKey}
+                intervalMs={intervalMs}
+              />
+            </div>
+            <div className="status-panel__divider" aria-hidden="true" />
+            <div className="status-panel__block">
+              <WeatherClock />
+            </div>
           </div>
         </div>
 

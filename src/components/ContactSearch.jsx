@@ -21,6 +21,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
   const itemRefs = useRef({})
   const [activeIndex, setActiveIndex] = useState(-1)
   const [listHeight, setListHeight] = useState(400)
+  const CONTACT_ITEM_HEIGHT = 220
 
   const indexedContacts = useMemo(
     () =>
@@ -46,7 +47,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
   useEffect(() => {
     const updateHeight = () => {
       const maxHeight = window.innerHeight - 260
-      setListHeight(Math.max(320, maxHeight))
+      setListHeight(Math.max(CONTACT_ITEM_HEIGHT * 1.2, maxHeight))
     }
     updateHeight()
     window.addEventListener('resize', updateHeight)
@@ -79,7 +80,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
       : '?'
 
     return (
-      <div style={{ ...style, padding: '0 0.5rem 1.25rem' }} className="virtual-row">
+      <div style={{ ...style, padding: '0.5rem 0.5rem' }} className="virtual-row">
         <article className="contact-card">
           <div className="contact-card__header">
             <div className="contact-card__avatar">{initials}</div>
@@ -160,7 +161,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
           <List
             height={listHeight}
             itemCount={filtered.length}
-            itemSize={180}
+            itemSize={CONTACT_ITEM_HEIGHT}
             width="100%"
             ref={listRef}
           >

@@ -21,12 +21,15 @@ const DispatcherRadar = () => {
           </a>
         </div>
       ) : (
-        <iframe
-          src="https://cw-intra-web/CWDashboard/Home/Radar"
-          title="Dispatcher Radar"
-          className="radar-frame minimal-scrollbar"
-          onError={() => setError(true)}
-        />
+        <div className="radar-frame-wrapper minimal-scrollbar">
+          <iframe
+            src="https://cw-intra-web/CWDashboard/Home/Radar"
+            title="Dispatcher Radar"
+            className="radar-frame minimal-scrollbar"
+            onError={() => setError(true)}
+          />
+          <div className="radar-frame-overlay" aria-hidden="true" />
+        </div>
       )}
     </div>
   )

@@ -21,10 +21,12 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
   const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query)
   const listRef = useRef(null)
+  const listContainerRef = useRef(null)
   const itemRefs = useRef({})
   const [activeIndex, setActiveIndex] = useState(-1)
   const [listHeight, setListHeight] = useState(400)
   const CONTACT_ITEM_HEIGHT = 220
+  const MIN_LIST_HEIGHT = CONTACT_ITEM_HEIGHT * 1.2
 
   const indexedContacts = useMemo(
     () =>
@@ -47,15 +49,38 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
     }
   }, [activeIndex, filtered])
 
-  useEffect(() => {
-    const updateHeight = () => {
-      const maxHeight = window.innerHeight - 260
-      setListHeight(Math.max(CONTACT_ITEM_HEIGHT * 1.2, maxHeight))
+  const updateHeight = useCallback(() => {
+    const listElement = listContainerRef.current
+    if (!listElement) {
+      setListHeight(MIN_LIST_HEIGHT)
+      return
     }
+
+    const rootStyles = getComputedStyle(document.documentElement)
+    const shellGap = parseFloat(rootStyles.getPropertyValue('--app-shell-gap') || '0')
+
+    const moduleCard = listElement.closest('.module-card')
+    const moduleStyles = moduleCard ? getComputedStyle(moduleCard) : null
+    const modulePaddingBottom = moduleStyles
+      ? parseFloat(moduleStyles.getPropertyValue('padding-bottom') || '0')
+      : 0
+
+    const { top } = listElement.getBoundingClientRect()
+    const safeSpacing = shellGap + modulePaddingBottom + 24
+    const availableHeight = window.innerHeight - top - safeSpacing
+
+    if (Number.isFinite(availableHeight)) {
+      setListHeight(Math.max(MIN_LIST_HEIGHT, availableHeight))
+    } else {
+      setListHeight(MIN_LIST_HEIGHT)
+    }
+  }, [MIN_LIST_HEIGHT])
+
+  useEffect(() => {
     updateHeight()
     window.addEventListener('resize', updateHeight)
     return () => window.removeEventListener('resize', updateHeight)
-  }, [])
+  }, [updateHeight])
 
   const handleNav = useCallback(
     (direction) => {
@@ -210,7 +235,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
       </div>
 
       {filtered.length > 0 ? (
-        <div className="contact-list minimal-scrollbar">
+        <div ref={listContainerRef} className="contact-list minimal-scrollbar">
           <List
             height={listHeight}
             itemCount={filtered.length}

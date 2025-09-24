@@ -105,7 +105,7 @@ const EmailGroups = ({
     toast.success('Opening Teams meeting')
   }, [mergedEmails])
 
-  const GROUP_ITEM_HEIGHT = 72
+  const GROUP_ITEM_HEIGHT = 80
 
   const listHeight = useMemo(
     () => Math.min(Math.max(filteredGroups.length * GROUP_ITEM_HEIGHT, 240), 420),

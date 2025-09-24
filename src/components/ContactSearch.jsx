@@ -5,6 +5,7 @@ import React, {
   useRef,
   useEffect,
 } from 'react'
+import { toast } from 'react-hot-toast'
 import { FixedSizeList as List } from 'react-window'
 import { formatPhones } from '../utils/formatPhones'
 
@@ -78,6 +79,23 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
     const initials = contact.Name
       ? contact.Name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
       : '?'
+    const emailAddress = [
+      contact.Email,
+      contact.EmailAddress,
+      contact['Email Address'],
+      contact.email,
+      contact['E-mail'],
+    ]
+      .map((value) => (typeof value === 'string' ? value.trim() : ''))
+      .find(Boolean)
+
+    const handleAddToList = () => {
+      if (emailAddress) {
+        addAdhocEmail(emailAddress)
+      } else {
+        toast.error('No email address available for this contact')
+      }
+    }
 
     return (
       <div style={{ ...style, padding: '0.5rem 0.5rem' }} className="virtual-row">
@@ -92,9 +110,13 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
 
           <div className="contact-card__row">
             <span className="label">Email</span>
-            <a href={`mailto:${contact.Email}`} style={{ whiteSpace: 'nowrap' }}>
-              {contact.Email}
-            </a>
+            {emailAddress ? (
+              <a href={`mailto:${emailAddress}`} style={{ whiteSpace: 'nowrap' }}>
+                {emailAddress}
+              </a>
+            ) : (
+              <span>N/A</span>
+            )}
           </div>
           <div className="contact-card__row">
             <span className="label">Phone</span>
@@ -104,12 +126,14 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
           <div className="contact-card__actions">
             <button
               ref={(el) => (itemRefs.current[index] = el)}
-              onClick={() => addAdhocEmail(contact.Email)}
+              onClick={handleAddToList}
               className="btn btn-ghost btn-small"
               onKeyDown={handleKeyDown}
               onFocus={() => setActiveIndex(index)}
+              type="button"
+              disabled={!emailAddress}
             >
-              Add to Email List
+              {emailAddress ? 'Add to Email List' : 'Email Unavailable'}
             </button>
           </div>
         </article>

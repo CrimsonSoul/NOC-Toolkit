@@ -663,6 +663,7 @@ a[href^="mailto:"]:hover {
   background: radial-gradient(circle at top, rgba(96, 165, 250, 0.18), transparent 60%);
   opacity: 0;
   transition: opacity 0.25s ease;
+  pointer-events: none;
 }
 
 .contact-card:hover {

@@ -4,6 +4,7 @@ import React, {
   useDeferredValue,
   useRef,
   useEffect,
+  useLayoutEffect,
   memo,
   useCallback,
 } from 'react'
@@ -11,11 +12,61 @@ import { toast } from 'react-hot-toast'
 import { FixedSizeList as List } from 'react-window'
 import { formatPhones } from '../utils/formatPhones'
 
+const EMAIL_FIELDS = [
+  'Email',
+  'EmailAddress',
+  'Email Address',
+  'EmailAddress1',
+  'Email Address 1',
+  'Email1',
+  'Email 1',
+  'Primary Email',
+  'Primary Email Address',
+  'E-mail',
+  'E-mail Address',
+  'SMTP',
+  'SMTP Address',
+  'User Email',
+  'Work Email',
+]
+
+const EMAIL_PATTERN = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi
+
+const extractEmails = (value) => {
+  if (!value) return []
+  if (Array.isArray(value)) {
+    return value.flatMap(extractEmails)
+  }
+  if (typeof value === 'string') {
+    const matches = value.match(EMAIL_PATTERN)
+    return matches ? matches.map((match) => match.trim()) : []
+  }
+  return []
+}
+
+const findEmailAddress = (contact) => {
+  for (const field of EMAIL_FIELDS) {
+    const emails = extractEmails(contact[field])
+    if (emails.length > 0) {
+      return emails[0]
+    }
+  }
+
+  for (const value of Object.values(contact)) {
+    const emails = extractEmails(value)
+    if (emails.length > 0) {
+      return emails[0]
+    }
+  }
+
+  return ''
+}
+
 /**
  * Provide a searchable list of contacts with quick email adding.
  * @param {Object} props
  * @param {Array} props.contactData - Parsed contact rows.
- * @param {(email: string, options?: { switchToEmailTab?: boolean }) => boolean} props.addAdhocEmail - Callback to add emails.
+ * @param {(email: string, options?: { switchToEmailTab?: boolean }) => 'added' | 'duplicate' | 'invalid'} props.addAdhocEmail - Callback to add emails.
  */
 const ContactSearch = ({ contactData, addAdhocEmail }) => {
   const [query, setQuery] = useState('')
@@ -51,36 +102,62 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
 
   const updateHeight = useCallback(() => {
     const listElement = listContainerRef.current
-    if (!listElement) {
+    if (!listElement || typeof window === 'undefined') {
       setListHeight(MIN_LIST_HEIGHT)
       return
     }
 
-    const rootStyles = getComputedStyle(document.documentElement)
-    const shellGap = parseFloat(rootStyles.getPropertyValue('--app-shell-gap') || '0')
+    const measure = () => {
+      const rootStyles = getComputedStyle(document.documentElement)
+      const shellGap = parseFloat(rootStyles.getPropertyValue('--app-shell-gap') || '0')
 
-    const moduleCard = listElement.closest('.module-card')
-    const moduleStyles = moduleCard ? getComputedStyle(moduleCard) : null
-    const modulePaddingBottom = moduleStyles
-      ? parseFloat(moduleStyles.getPropertyValue('padding-bottom') || '0')
-      : 0
+      const moduleCard = listElement.closest('.module-card')
+      const moduleStyles = moduleCard ? getComputedStyle(moduleCard) : null
+      const modulePaddingBottom = moduleStyles
+        ? parseFloat(moduleStyles.getPropertyValue('padding-bottom') || '0')
+        : 0
 
-    const { top } = listElement.getBoundingClientRect()
-    const safeSpacing = shellGap + modulePaddingBottom + 24
-    const availableHeight = window.innerHeight - top - safeSpacing
+      const { top } = listElement.getBoundingClientRect()
+      const safeSpacing = shellGap + modulePaddingBottom + 24
+      const availableHeight = window.innerHeight - top - safeSpacing
 
-    if (Number.isFinite(availableHeight)) {
-      setListHeight(Math.max(MIN_LIST_HEIGHT, availableHeight))
+      if (Number.isFinite(availableHeight)) {
+        setListHeight(Math.max(MIN_LIST_HEIGHT, availableHeight))
+      } else {
+        setListHeight(MIN_LIST_HEIGHT)
+      }
+    }
+
+    if (typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(measure)
     } else {
-      setListHeight(MIN_LIST_HEIGHT)
+      measure()
     }
   }, [MIN_LIST_HEIGHT])
 
+  useLayoutEffect(() => {
+    updateHeight()
+
+    const handleResize = () => updateHeight()
+    window.addEventListener('resize', handleResize)
+
+    const moduleCard = listContainerRef.current?.closest('.module-card')
+    let resizeObserver
+
+    if (moduleCard && typeof window !== 'undefined' && 'ResizeObserver' in window) {
+      resizeObserver = new ResizeObserver(() => updateHeight())
+      resizeObserver.observe(moduleCard)
+    }
+
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      resizeObserver?.disconnect()
+    }
+  }, [updateHeight])
+
   useEffect(() => {
     updateHeight()
-    window.addEventListener('resize', updateHeight)
-    return () => window.removeEventListener('resize', updateHeight)
-  }, [updateHeight])
+  }, [filtered.length, updateHeight])
 
   const handleNav = useCallback(
     (direction) => {
@@ -115,21 +192,22 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
       const initials = contact.Name
         ? contact.Name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
         : '?'
-      const emailAddress = [
-        contact.Email,
-        contact.EmailAddress,
-        contact['Email Address'],
-        contact.email,
-        contact['E-mail'],
-      ]
-        .map((value) => (typeof value === 'string' ? value.trim() : ''))
-        .find(Boolean)
+      const emailAddress = findEmailAddress(contact)
 
       const handleAddToList = () => {
-        if (emailAddress) {
-          addAdhocEmail(emailAddress, { switchToEmailTab: true })
-        } else {
+        if (!emailAddress) {
           toast.error('No email address available for this contact')
+          return
+        }
+
+        const result = addAdhocEmail(emailAddress, { switchToEmailTab: true })
+
+        if (result === 'added') {
+          toast.success(`Added ${emailAddress} to the list`)
+        } else if (result === 'duplicate') {
+          toast('Email already in list', { icon: 'ℹ️' })
+        } else {
+          toast.error('Invalid email address')
         }
       }
 

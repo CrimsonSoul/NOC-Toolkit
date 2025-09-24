@@ -81,29 +81,26 @@ function App() {
       const normalized = cleaned.toLowerCase()
 
       if (!cleaned || !isValidEmail(cleaned)) {
-        toast.error('Invalid email address')
-        return false
+        return 'invalid'
       }
 
-      let added = false
+      /** @type {'added' | 'duplicate'} */
+      let status = 'duplicate'
+
       setAdhocEmails((prev) => {
         if (prev.some((existing) => existing.toLowerCase() === normalized)) {
           return prev
         }
-        added = true
+
+        status = 'added'
         return [...prev, cleaned]
       })
 
-      if (added) {
-        toast.success(`Added ${cleaned}`)
-        if (switchToEmailTab) {
-          setTab('email')
-        }
-      } else {
-        toast('Email already in list', { icon: 'ℹ️' })
+      if (status === 'added' && switchToEmailTab) {
+        setTab('email')
       }
 
-      return added
+      return status
     },
     [isValidEmail, setTab],
   )

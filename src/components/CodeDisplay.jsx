@@ -32,11 +32,13 @@ const CodeDisplay = ({ currentCode, previousCode, progressKey, intervalMs }) => 
     return () => cancelAnimationFrame(rafRef.current)
   }, [progressKey, intervalMs])
 
+  const hasPrevious = Boolean(previousCode)
+
   return (
     <div className="code-display">
       <div className="code-display__meta">
         <span className="small-text text-muted">Current Code</span>
-        <span className="small-muted">Prev: {previousCode || 'N/A'}</span>
+        {hasPrevious && <span className="small-muted">Prev: {previousCode}</span>}
       </div>
       <div className="large-bold" aria-live="polite">
         {currentCode}

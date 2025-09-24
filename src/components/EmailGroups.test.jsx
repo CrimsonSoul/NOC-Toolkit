@@ -75,11 +75,11 @@ describe('EmailGroups', () => {
     }
 
     render(<Wrapper />)
-    const removeButton = screen.getByRole('button', { name: /remove solo@example.com/i })
+    const removeButton = screen.getByRole('listitem', { name: /solo@example.com/i })
     expect(removeButton).toBeInTheDocument()
     await user.click(removeButton)
     expect(
-      screen.queryByRole('button', { name: /remove solo@example.com/i })
+      screen.queryByRole('listitem', { name: /solo@example.com/i })
     ).not.toBeInTheDocument()
   })
 })

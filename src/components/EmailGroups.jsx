@@ -20,6 +20,7 @@ const EmailGroups = ({
   const [copied, setCopied] = useState(false)
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
+  const [removedEmails, setRemovedEmails] = useState([])
   const timeoutRef = useRef(null)
 
   const groups = useMemo(() => {
@@ -52,6 +53,19 @@ const EmailGroups = ({
     return [...new Set([...all, ...adhocEmails])]
   }, [selectedGroups, groupMap, adhocEmails])
 
+  const activeEmails = useMemo(
+    () => mergedEmails.filter((email) => !removedEmails.includes(email)),
+    [mergedEmails, removedEmails],
+  )
+
+  useEffect(() => {
+    setRemovedEmails((prev) => {
+      if (prev.length === 0) return prev
+      const filtered = prev.filter((email) => mergedEmails.includes(email))
+      return filtered.length === prev.length ? prev : filtered
+    })
+  }, [mergedEmails])
+
   const toggleSelect = useCallback(
     (name) => {
       setSelectedGroups((prev) =>
@@ -64,12 +78,13 @@ const EmailGroups = ({
   const clearAll = useCallback(() => {
     setSelectedGroups([])
     setAdhocEmails([])
+    setRemovedEmails([])
   }, [setSelectedGroups, setAdhocEmails])
 
   const copyToClipboard = useCallback(async () => {
-    if (mergedEmails.length === 0) return
+    if (activeEmails.length === 0) return
     try {
-      await navigator.clipboard.writeText(mergedEmails.join(', '))
+      await navigator.clipboard.writeText(activeEmails.join(', '))
       setCopied(true)
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
@@ -82,7 +97,7 @@ const EmailGroups = ({
     } catch {
       toast.error('Failed to copy')
     }
-  }, [mergedEmails])
+  }, [activeEmails])
 
   useEffect(() => {
     return () => {
@@ -93,23 +108,31 @@ const EmailGroups = ({
   }, [])
 
   const launchTeams = useCallback(() => {
-    if (mergedEmails.length === 0) return
+    if (activeEmails.length === 0) return
     const now = new Date()
     const title = `${now.getMonth() + 1}/${now.getDate()}`
     const url =
       `https://teams.microsoft.com/l/meeting/new?subject=${encodeURIComponent(
         title,
-      )}&attendees=${encodeURIComponent(mergedEmails.join(','))}`
+      )}&attendees=${encodeURIComponent(activeEmails.join(','))}`
     window.nocListAPI?.openExternal?.(url)
     toast.success('Opening Teams meeting')
-  }, [mergedEmails])
+  }, [activeEmails])
 
-  const removeAdhocEmail = useCallback(
+  const handleRemoveEmail = useCallback(
     (email) => {
-      setAdhocEmails((prev) => prev.filter((item) => item !== email))
+      if (adhocEmails.includes(email)) {
+        setAdhocEmails((prev) => prev.filter((item) => item !== email))
+      } else {
+        setRemovedEmails((prev) => (prev.includes(email) ? prev : [...prev, email]))
+      }
     },
-    [setAdhocEmails],
+    [adhocEmails, setAdhocEmails, setRemovedEmails],
   )
+
+  const restoreRemovedEmails = useCallback(() => {
+    setRemovedEmails([])
+  }, [setRemovedEmails])
 
   return (
     <div className="email-groups">
@@ -175,34 +198,7 @@ const EmailGroups = ({
         )}
       </div>
 
-      {adhocEmails.length > 0 && (
-        <div className="adhoc-email-panel">
-          <div className="adhoc-email-panel__header">
-            <strong>Ad-hoc Emails</strong>
-            <span className="badge">{adhocEmails.length}</span>
-          </div>
-          <div className="adhoc-email-panel__list">
-            {adhocEmails.map((email) => (
-              <button
-                key={email}
-                type="button"
-                className="adhoc-chip"
-                onClick={() => removeAdhocEmail(email)}
-                title={`Remove ${email}`}
-              >
-                <span className="adhoc-chip__text">{email}</span>
-                <span aria-hidden="true" className="adhoc-chip__remove">
-                  ×
-                </span>
-                <span className="sr-only">Remove {email}</span>
-              </button>
-            ))}
-          </div>
-          <p className="small-muted m-0">Tap an email to remove it from the list.</p>
-        </div>
-      )}
-
-      {mergedEmails.length > 0 && (
+      {activeEmails.length > 0 && (
         <>
           <div className="email-actions">
             <button onClick={copyToClipboard} className="btn">
@@ -213,10 +209,28 @@ const EmailGroups = ({
             </button>
             {copied && <span className="copied-indicator">Copied</span>}
           </div>
-          <div className="email-output">
-            <strong>Merged Emails:</strong>
-            <div className="break-word mt-0-5">{mergedEmails.join(', ')}</div>
+          <div className="email-chip-grid minimal-scrollbar" role="list">
+            {activeEmails.map((email) => (
+              <button
+                key={email}
+                type="button"
+                className="email-chip"
+                onClick={() => handleRemoveEmail(email)}
+                title={`Remove ${email}`}
+                role="listitem"
+              >
+                <span className="email-chip__text">{email}</span>
+                <span aria-hidden="true" className="email-chip__remove">×</span>
+                <span className="sr-only">Remove {email}</span>
+              </button>
+            ))}
           </div>
+          <p className="small-muted m-0">Tap an email to remove it from the list.</p>
+          {removedEmails.length > 0 && (
+            <button onClick={restoreRemovedEmails} className="btn btn-ghost">
+              Restore Removed Emails
+            </button>
+          )}
         </>
       )}
     </div>

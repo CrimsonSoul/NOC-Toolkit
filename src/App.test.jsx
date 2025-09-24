@@ -3,19 +3,6 @@ import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 
-vi.mock('react-window', async () => {
-  const React = await import('react')
-  return {
-    FixedSizeList: React.forwardRef(({ children, itemCount, itemSize, height }, ref) => (
-      <div ref={ref} style={{ height, overflowY: 'auto' }}>
-        {Array.from({ length: itemCount }).map((_, index) =>
-          children({ index, style: { height: itemSize, width: '100%' } }),
-        )}
-      </div>
-    )),
-  }
-})
-
 vi.mock('./components/ContactSearch', () => ({
   __esModule: true,
   default: ({ addAdhocEmail }) => (
@@ -50,7 +37,7 @@ afterEach(() => {
 })
 
 describe('App', () => {
-  it('renders heading', () => {
+  it('renders fallback branding when logo is unavailable', () => {
     global.fetch = vi.fn(() =>
       Promise.resolve({ ok: false, json: () => Promise.resolve({}) }),
     )
@@ -60,8 +47,7 @@ describe('App', () => {
       onExcelWatchError: () => () => {},
     }
     render(<App />)
-    expect(screen.getByRole('heading', { name: /operations console/i })).toBeInTheDocument()
-    expect(screen.getByText(/manage contacts, distribution groups/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/noc list logo/i)).toBeInTheDocument()
   })
 
   it('shows image when logo file is available', async () => {
@@ -119,7 +105,7 @@ describe('App', () => {
     await waitFor(() => expect(emailTab).toHaveAttribute('aria-selected', 'true'))
 
     expect(
-      await screen.findByRole('button', { name: /remove test\.agent@example\.com/i })
+      await screen.findByRole('listitem', { name: /test\.agent@example\.com/i })
     ).toBeInTheDocument()
 
     await new Promise((resolve) => setTimeout(resolve, 350))

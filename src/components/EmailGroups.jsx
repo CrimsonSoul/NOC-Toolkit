@@ -212,12 +212,22 @@ const EmailGroups = ({
           <div className="empty-state">No groups match your search.</div>
         )}
 
-        {(selectedGroups.length > 0 || adhocEmails.length > 0) && (
-          <button onClick={clearAll} className="btn btn-secondary mt-0-5">
-            Clear All
-          </button>
-        )}
       </div>
+
+      {(selectedGroups.length > 0 || adhocEmails.length > 0 || hasRemovedEmails) && (
+        <div className="email-secondary-actions">
+          {(selectedGroups.length > 0 || adhocEmails.length > 0) && (
+            <button onClick={clearAll} className="btn btn-secondary">
+              Reset Selected Groups & Emails
+            </button>
+          )}
+          {hasRemovedEmails && (
+            <button onClick={restoreRemovedEmails} className="btn btn-ghost">
+              Restore Removed Emails
+            </button>
+          )}
+        </div>
+      )}
 
       {activeEmails.length > 0 && (
         <>
@@ -247,19 +257,9 @@ const EmailGroups = ({
             ))}
           </div>
           <p className="small-muted m-0">Tap an email to remove it from the list.</p>
-          {hasRemovedEmails && (
-            <button onClick={restoreRemovedEmails} className="btn btn-ghost">
-              Restore Removed Emails
-            </button>
-          )}
         </>
       )}
 
-      {hasRemovedEmails && activeEmails.length === 0 && (
-        <button onClick={restoreRemovedEmails} className="btn btn-ghost">
-          Restore Removed Emails
-        </button>
-      )}
     </div>
   )
 }

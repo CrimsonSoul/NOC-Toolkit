@@ -53,7 +53,7 @@ describe('EmailGroups', () => {
     await user.click(groupA)
     expect(screen.getByRole('button', { name: /Group A/i })).toHaveClass('is-selected')
     const clear = screen.getByRole('button', {
-      name: /Reset Selected Groups & Emails/i,
+      name: /Clear All/i,
     })
     await user.click(clear)
     expect(screen.getByRole('button', { name: /Group A/i })).not.toHaveClass('is-selected')

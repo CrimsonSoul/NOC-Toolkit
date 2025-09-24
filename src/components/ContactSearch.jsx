@@ -245,7 +245,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
                       }
                     }}
                     onClick={handleAddToList}
-                    className="btn btn-ghost btn-small"
+                    className="btn btn-outline btn-small"
                     onKeyDown={(e) => handleKeyDown(e, index)}
                     onFocus={() => setActiveIndex(index)}
                     type="button"

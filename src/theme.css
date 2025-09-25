@@ -272,7 +272,7 @@ body {
 
 .module-card .sticky-header {
   position: sticky;
-  top: calc(var(--module-pad) * -1 + clamp(0.5rem, 1.2vw, 1.25rem));
+  top: clamp(0.5rem, 1.2vw, 1.25rem);
   margin: calc(var(--module-pad) * -1) calc(var(--module-pad) * -1) 1.25rem;
   padding: clamp(1rem, 1.5vw, 1.5rem) var(--module-pad);
   background: var(--bg-secondary);
@@ -458,9 +458,10 @@ body {
   background: rgba(5, 8, 15, 0.78);
   backdrop-filter: blur(14px);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   padding: clamp(1rem, 3vw, 2.5rem);
+  overflow-y: auto;
   z-index: 30;
 }
 
@@ -475,6 +476,7 @@ body {
   border-radius: 20px;
   padding: clamp(1.25rem, 2vw, 1.75rem);
   box-shadow: var(--shadow-lg);
+  margin: auto;
 }
 
 .contact-picker__header {

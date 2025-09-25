@@ -28,7 +28,6 @@ const DispatcherRadar = () => {
             className="radar-frame minimal-scrollbar"
             onError={() => setError(true)}
           />
-          <div className="radar-frame-overlay" aria-hidden="true" />
         </div>
       )}
     </div>

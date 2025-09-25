@@ -84,7 +84,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: clamp(0.75rem, 1vw, 1.25rem);
   width: 100%;
 }
@@ -176,11 +176,11 @@ body {
   min-width: 0;
   flex: 1 1 320px;
   width: auto;
+  margin-left: auto;
 }
 
 .app-header-controls .tab-selector {
   flex: 0 0 auto;
-  margin-right: auto;
 }
 
 @media (max-width: 900px) {

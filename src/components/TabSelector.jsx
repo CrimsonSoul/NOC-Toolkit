@@ -7,7 +7,7 @@ import React, { memo } from 'react'
  * @param {(tab: string) => void} props.setTab - Update active tab.
  */
 const TabSelector = ({ tab, setTab }) => (
-  <div className="stack-on-small tab-selector" role="tablist" aria-label="Primary tools">
+  <div className="tab-selector" role="tablist" aria-label="Primary tools">
     {['email', 'contact', 'radar'].map((t) => (
       <button
         key={t}

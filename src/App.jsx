@@ -226,6 +226,8 @@ function App() {
               selectedGroups={selectedGroups}
               setSelectedGroups={setSelectedGroups}
               setAdhocEmails={setAdhocEmails}
+              contactData={contactData}
+              addAdhocEmail={addAdhocEmail}
             />
           </div>
         )}

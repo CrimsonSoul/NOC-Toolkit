@@ -2,11 +2,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createRequire } from 'module'
 
 const require = createRequire(import.meta.url)
+const menuStub = {
+  buildFromTemplate: vi.fn(() => ({})),
+  setApplicationMenu: vi.fn(),
+}
+
 const electronStub = {
   app: { isPackaged: false },
   BrowserWindow: class {},
   ipcMain: { on: vi.fn(), handle: vi.fn() },
   shell: { openExternal: vi.fn(), openPath: vi.fn() },
+  Menu: menuStub,
 }
 require.cache[require.resolve('electron')] = { exports: electronStub }
 

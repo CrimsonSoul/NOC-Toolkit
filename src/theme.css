@@ -248,6 +248,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  --contact-header-height: 0px;
 }
 
 .button-group {
@@ -873,6 +874,8 @@ a[href^="mailto:"]:hover {
   width: 100%;
   padding: 0;
   margin: 0;
+  padding-top: var(--contact-header-height);
+  margin-top: calc(-1 * var(--contact-header-height));
 }
 
 .contact-card {

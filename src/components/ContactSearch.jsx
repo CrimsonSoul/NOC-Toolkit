@@ -4,6 +4,7 @@ import React, {
   useDeferredValue,
   useRef,
   useEffect,
+  useLayoutEffect,
   memo,
   useCallback,
 } from 'react'
@@ -21,6 +22,8 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
   const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query)
   const searchInputRef = useRef(null)
+  const containerRef = useRef(null)
+  const headerRef = useRef(null)
   const itemRefs = useRef([])
   const [activeIndex, setActiveIndex] = useState(-1)
 
@@ -94,9 +97,38 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
     [filtered.length],
   )
 
+  useLayoutEffect(() => {
+    const container = containerRef.current
+    const header = headerRef.current
+    if (!container || !header) return
+
+    const updateOffset = () => {
+      container.style.setProperty('--contact-header-height', `${header.offsetHeight}px`)
+    }
+
+    updateOffset()
+
+    const resizeObserver =
+      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => updateOffset()) : null
+
+    if (resizeObserver) {
+      resizeObserver.observe(header)
+    } else {
+      window.addEventListener('resize', updateOffset)
+    }
+
+    return () => {
+      if (resizeObserver) {
+        resizeObserver.disconnect()
+      } else {
+        window.removeEventListener('resize', updateOffset)
+      }
+    }
+  }, [])
+
   return (
-    <div className="contact-search">
-      <div className="sticky-header">
+    <div className="contact-search" ref={containerRef}>
+      <div className="sticky-header" ref={headerRef}>
         <div className="stack-on-small align-center gap-0-5 mb-1">
           <button
             onClick={() => window.nocListAPI?.openFile?.('contacts.xlsx')}

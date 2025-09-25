@@ -147,7 +147,7 @@ function App() {
         border: '1px solid var(--border-color)',
         fontSize: '0.9rem',
         borderRadius: '6px',
-        fontFamily: 'DM Sans, sans-serif',
+        fontFamily: 'Barlow, DM Sans, sans-serif',
       },
       success: {
         icon: '✓',

@@ -9,56 +9,7 @@ import React, {
 } from 'react'
 import { toast } from 'react-hot-toast'
 import { formatPhones } from '../utils/formatPhones'
-
-const EMAIL_FIELDS = [
-  'Email',
-  'EmailAddress',
-  'Email Address',
-  'EmailAddress1',
-  'Email Address 1',
-  'Email1',
-  'Email 1',
-  'Primary Email',
-  'Primary Email Address',
-  'E-mail',
-  'E-mail Address',
-  'SMTP',
-  'SMTP Address',
-  'User Email',
-  'Work Email',
-]
-
-const EMAIL_PATTERN = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi
-
-const extractEmails = (value) => {
-  if (!value) return []
-  if (Array.isArray(value)) {
-    return value.flatMap(extractEmails)
-  }
-  if (typeof value === 'string') {
-    const matches = value.match(EMAIL_PATTERN)
-    return matches ? matches.map((match) => match.trim()) : []
-  }
-  return []
-}
-
-const findEmailAddress = (contact) => {
-  for (const field of EMAIL_FIELDS) {
-    const emails = extractEmails(contact[field])
-    if (emails.length > 0) {
-      return emails[0]
-    }
-  }
-
-  for (const value of Object.values(contact)) {
-    const emails = extractEmails(value)
-    if (emails.length > 0) {
-      return emails[0]
-    }
-  }
-
-  return ''
-}
+import { findEmailAddress, getContactInitials } from '../utils/findEmailAddress'
 
 /**
  * Provide a searchable list of contacts with quick email adding.
@@ -185,14 +136,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
       {filtered.length > 0 ? (
         <div className="contact-list">
           {filtered.map((contact, index) => {
-            const initials = contact.Name
-              ? contact.Name.split(' ')
-                  .filter(Boolean)
-                  .slice(0, 2)
-                  .map((part) => part[0])
-                  .join('')
-                  .toUpperCase()
-              : '?'
+            const initials = getContactInitials(contact.Name)
             const emailAddress = findEmailAddress(contact)
 
             const handleAddToList = () => {

@@ -1,6 +1,6 @@
-import { render, screen, cleanup } from '@testing-library/react'
+import { render, screen, cleanup, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 import { useState } from 'react'
 import EmailGroups from './EmailGroups'
@@ -9,6 +9,11 @@ const sampleData = [
   ['Group A', 'Group B'],
   ['a1@example.com', 'b1@example.com'],
   ['a2@example.com', '']
+]
+
+const sampleContacts = [
+  { Name: 'Alex Johnson', Email: 'alex@example.com', Phone: '123-456-7890' },
+  { Name: 'Bianca Rivers', Email: 'bianca@example.com' },
 ]
 
 describe('EmailGroups', () => {
@@ -23,6 +28,8 @@ describe('EmailGroups', () => {
         selectedGroups={[]}
         setSelectedGroups={() => {}}
         setAdhocEmails={() => {}}
+        contactData={sampleContacts}
+        addAdhocEmail={() => 'added'}
       />
     )
     const groupAButton = screen.getByRole('button', { name: /Group A/i })
@@ -44,6 +51,8 @@ describe('EmailGroups', () => {
           selectedGroups={selected}
           setSelectedGroups={setSelected}
           setAdhocEmails={setAdhoc}
+          contactData={sampleContacts}
+          addAdhocEmail={() => 'added'}
         />
       )
     }
@@ -72,6 +81,8 @@ describe('EmailGroups', () => {
           selectedGroups={selected}
           setSelectedGroups={setSelected}
           setAdhocEmails={setAdhoc}
+          contactData={sampleContacts}
+          addAdhocEmail={() => 'added'}
         />
       )
     }
@@ -83,5 +94,36 @@ describe('EmailGroups', () => {
     expect(
       screen.queryByRole('listitem', { name: /solo@example.com/i })
     ).not.toBeInTheDocument()
+  })
+
+  it('opens contact picker and filters contacts', async () => {
+    const user = userEvent.setup()
+
+    const addEmailMock = vi.fn().mockReturnValue('added')
+
+    render(
+      <EmailGroups
+        emailData={sampleData}
+        adhocEmails={[]}
+        selectedGroups={[]}
+        setSelectedGroups={() => {}}
+        setAdhocEmails={() => {}}
+        contactData={sampleContacts}
+        addAdhocEmail={addEmailMock}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: /Add Individual Contacts/i }))
+
+    const searchField = screen.getByPlaceholderText(/search contacts/i)
+    await waitFor(() => expect(searchField).toHaveFocus())
+
+    await user.type(searchField, 'Bianca')
+
+    expect(screen.getByText('Bianca Rivers')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /Add to List/i }))
+
+    expect(addEmailMock).toHaveBeenCalledWith('bianca@example.com')
   })
 })

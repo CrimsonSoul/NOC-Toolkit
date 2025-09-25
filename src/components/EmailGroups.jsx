@@ -1,5 +1,33 @@
-import React, { useMemo, useState, useCallback, useRef, useEffect, memo } from 'react'
+import React, {
+  useMemo,
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  memo,
+} from 'react'
 import { toast } from 'react-hot-toast'
+import { findEmailAddress, getContactInitials } from '../utils/findEmailAddress'
+import { formatPhones } from '../utils/formatPhones'
+
+const PHONE_FIELDS = [
+  'Phone',
+  'PhoneNumber',
+  'Phone Number',
+  'Primary Phone',
+  'Primary Phone Number',
+  'Business Phone',
+  'Business Phone Number',
+  'Work Phone',
+  'WorkPhone',
+  'Mobile Phone',
+  'MobilePhone',
+  'Mobile',
+  'Cell',
+  'Cell Phone',
+  'Telephone',
+  'Tel',
+]
 
 /**
  * Manage selection of email groups and creation of merged mailing lists.
@@ -16,13 +44,18 @@ const EmailGroups = ({
   selectedGroups,
   setSelectedGroups,
   setAdhocEmails,
+  contactData = [],
+  addAdhocEmail,
 }) => {
   const [copied, setCopied] = useState(false)
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [removedEmails, setRemovedEmails] = useState([])
   const [removedManualEmails, setRemovedManualEmails] = useState([])
+  const [isContactPickerOpen, setIsContactPickerOpen] = useState(false)
+  const [contactQuery, setContactQuery] = useState('')
   const timeoutRef = useRef(null)
+  const contactSearchRef = useRef(null)
 
   const groups = useMemo(() => {
     if (emailData.length === 0) return []
@@ -43,6 +76,41 @@ const EmailGroups = ({
     const term = search.toLowerCase()
     return groups.filter((group) => group._search.includes(term))
   }, [groups, search])
+
+  const indexedContacts = useMemo(() => {
+    return contactData.map((contact, index) => {
+      const phoneField = PHONE_FIELDS.find((field) => contact?.[field])
+      const phoneValue = phoneField ? contact[phoneField] : contact?.Phone
+      const key =
+        contact?.Email ||
+        contact?.EmailAddress ||
+        contact?.['Email Address'] ||
+        contact?.email ||
+        contact?.['E-mail'] ||
+        contact?.Name ||
+        index
+
+      return {
+        raw: contact,
+        key,
+        email: findEmailAddress(contact),
+        initials: getContactInitials(contact?.Name),
+        phone: phoneValue,
+        searchText: Object.values(contact)
+          .map((value) => (value == null ? '' : String(value)))
+          .join(' ')
+          .toLowerCase(),
+      }
+    })
+  }, [contactData])
+
+  const filteredContacts = useMemo(() => {
+    const term = contactQuery.trim().toLowerCase()
+    const list = term
+      ? indexedContacts.filter((contact) => contact.searchText.includes(term))
+      : indexedContacts
+    return list.slice(0, 250)
+  }, [contactQuery, indexedContacts])
 
   const groupMap = useMemo(
     () => new Map(groups.map((g) => [g.name, g.emails])),
@@ -145,6 +213,29 @@ const EmailGroups = ({
     }
   }, [removedManualEmails, setAdhocEmails, setRemovedManualEmails])
 
+  const handleAddContactEmail = useCallback(
+    (contact) => {
+      if (!addAdhocEmail) return
+      const email = contact.email
+
+      if (!email) {
+        toast.error('No email address available for this contact')
+        return
+      }
+
+      const result = addAdhocEmail(email)
+
+      if (result === 'added') {
+        toast.success(`Added ${email} to the list`)
+      } else if (result === 'duplicate') {
+        toast('Email already in list', { icon: 'ℹ️' })
+      } else {
+        toast.error('Invalid email address')
+      }
+    },
+    [addAdhocEmail],
+  )
+
   useEffect(() => {
     setRemovedManualEmails((prev) => {
       if (!prev.length) return prev
@@ -153,18 +244,50 @@ const EmailGroups = ({
     })
   }, [adhocEmails])
 
+  useEffect(() => {
+    if (!isContactPickerOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setIsContactPickerOpen(false)
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    contactSearchRef.current?.focus()
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isContactPickerOpen])
+
   const hasRemovedEmails = removedEmails.length > 0 || removedManualEmails.length > 0
 
   return (
     <div className="email-groups">
       <div className="sticky-header">
         <div className="stack-on-small align-center gap-0-5 mb-1">
-          <button
-            onClick={() => window.nocListAPI?.openFile?.('groups.xlsx')}
-            className="btn btn-secondary"
-          >
-            Open Email Groups Excel
-          </button>
+          <div className="button-group">
+            <button
+              onClick={() => window.nocListAPI?.openFile?.('groups.xlsx')}
+              className="btn btn-secondary"
+            >
+              Open Email Groups Excel
+            </button>
+            <button
+              onClick={() => {
+                setIsContactPickerOpen(true)
+                setContactQuery('')
+              }}
+              className="btn btn-outline"
+              type="button"
+            >
+              Add Individual Contacts
+            </button>
+          </div>
           <div className="input-wrapper">
             <input
               type="text"
@@ -257,6 +380,112 @@ const EmailGroups = ({
               Restore Removed Emails
             </button>
           )}
+        </div>
+      )}
+
+      {isContactPickerOpen && (
+        <div
+          className="contact-picker-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Contact picker"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setIsContactPickerOpen(false)
+            }
+          }}
+        >
+          <div className="contact-picker">
+            <div className="contact-picker__header">
+              <div>
+                <h2 className="contact-picker__title">Add Individual Contacts</h2>
+                <p className="small-muted m-0">
+                  {contactData.length > 0
+                    ? `Browse ${contactData.length.toLocaleString()} contacts to add individuals.`
+                    : 'No contacts available.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsContactPickerOpen(false)}
+                className="btn btn-ghost"
+                aria-label="Close contact picker"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="contact-picker__search">
+              <div className="input-wrapper">
+                <input
+                  ref={contactSearchRef}
+                  type="text"
+                  placeholder="Search contacts..."
+                  value={contactQuery}
+                  onChange={e => setContactQuery(e.target.value)}
+                  className="input search-input"
+                />
+                {contactQuery && (
+                  <button
+                    onClick={() => setContactQuery('')}
+                    className="clear-btn"
+                    title="Clear contact search"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="contact-picker__list minimal-scrollbar">
+              {filteredContacts.length > 0 ? (
+                filteredContacts.map((contact) => (
+                  <article key={contact.key} className="contact-picker__item">
+                    <div className="contact-picker__identity">
+                      <div className="contact-picker__avatar">{contact.initials}</div>
+                      <div>
+                        <h3 className="contact-picker__name">{contact.raw.Name || contact.email || 'Unknown'}</h3>
+                        {contact.raw.Title && (
+                          <p className="contact-picker__title">{contact.raw.Title}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="contact-picker__details">
+                      <div>
+                        <span className="label">Email</span>
+                        {contact.email ? (
+                          <a href={`mailto:${contact.email}`}>{contact.email}</a>
+                        ) : (
+                          <span>Not available</span>
+                        )}
+                      </div>
+                      <div>
+                        <span className="label">Phone</span>
+                        <span>{formatPhones(contact.phone) || 'Not available'}</span>
+                      </div>
+                    </div>
+                    <div className="contact-picker__actions">
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-small"
+                        onClick={() => handleAddContactEmail(contact)}
+                        disabled={!addAdhocEmail || !contact.email}
+                      >
+                        {contact.email ? 'Add to List' : 'Email Unavailable'}
+                      </button>
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <div className="empty-state">No contacts match your search.</div>
+              )}
+            </div>
+            {!contactQuery && indexedContacts.length > filteredContacts.length && (
+              <p className="small-muted m-0">
+                Showing the first {filteredContacts.length} contacts. Use search to find others.
+              </p>
+            )}
+          </div>
         </div>
       )}
 

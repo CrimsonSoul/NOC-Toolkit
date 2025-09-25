@@ -173,44 +173,46 @@ function App() {
 
       <header className="app-header" ref={headerRef}>
         <div className="app-header-card">
-          <div className="app-identity">
-            <div className="app-brand">
-              {logoAvailable ? (
-                <img src="logo.png" alt="NOC List logo" className="app-logo" />
-              ) : (
-                <div className="app-logo-fallback" aria-label="NOC List logo">
-                  <span>NOC</span>
-                  <span>LIST</span>
+          <div className="app-header-row">
+            <div className="identity-card">
+              <div className="identity-card__figure">
+                {logoAvailable ? (
+                  <img src="logo.png" alt="NOC List logo" className="app-logo" />
+                ) : (
+                  <div className="app-logo-fallback" aria-label="NOC List logo">
+                    <span>NOC</span>
+                    <span>LIST</span>
+                  </div>
+                )}
+              </div>
+              <div className="identity-card__content">
+                <div className="identity-card__code">
+                  <CodeDisplay
+                    currentCode={currentCode}
+                    previousCode={previousCode}
+                    progressKey={progressKey}
+                    intervalMs={intervalMs}
+                  />
+                </div>
+                <span className="identity-card__divider" aria-hidden="true" />
+                <div className="identity-card__clock">
+                  <WeatherClock />
+                </div>
+              </div>
+            </div>
+
+            <div className="app-header-controls">
+              <TabSelector tab={tab} setTab={setTab} />
+
+              {tab !== 'radar' && (
+                <div className="app-toolbar">
+                  <button onClick={refreshData} className="btn btn-ghost">
+                    Refresh
+                  </button>
+                  <span className="app-toolbar-meta">Updated {lastRefresh}</span>
                 </div>
               )}
             </div>
-            <div className="app-identity__meta status-panel">
-              <div className="status-panel__block">
-                <CodeDisplay
-                  currentCode={currentCode}
-                  previousCode={previousCode}
-                  progressKey={progressKey}
-                  intervalMs={intervalMs}
-                />
-              </div>
-              <div className="status-panel__divider" aria-hidden="true" />
-              <div className="status-panel__block">
-                <WeatherClock />
-              </div>
-            </div>
-          </div>
-
-          <div className="app-header-controls">
-            <TabSelector tab={tab} setTab={setTab} />
-
-            {tab !== 'radar' && (
-              <div className="app-toolbar">
-                <button onClick={refreshData} className="btn">
-                  Refresh Data
-                </button>
-                <span className="app-toolbar-meta">Last refreshed: {lastRefresh}</span>
-              </div>
-            )}
           </div>
         </div>
       </header>

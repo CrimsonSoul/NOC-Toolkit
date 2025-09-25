@@ -2,8 +2,8 @@ import React, { useEffect, useState, useCallback, useMemo, useRef, useLayoutEffe
 import EmailGroups from './components/EmailGroups'
 import ContactSearch from './components/ContactSearch'
 import CodeDisplay from './components/CodeDisplay'
+import Clock from './components/Clock'
 import TabSelector from './components/TabSelector'
-import WeatherClock from './components/WeatherClock'
 import DispatcherRadar from './components/DispatcherRadar'
 import { Toaster, toast } from 'react-hot-toast'
 import useRotatingCode from './hooks/useRotatingCode'
@@ -194,10 +194,7 @@ function App() {
                     intervalMs={intervalMs}
                   />
                 </div>
-                <span className="identity-card__divider" aria-hidden="true" />
-                <div className="identity-card__clock">
-                  <WeatherClock />
-                </div>
+                <Clock />
               </div>
             </div>
 

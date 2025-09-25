@@ -15,11 +15,6 @@ vi.mock('./components/ContactSearch', () => ({
   ),
 }))
 
-vi.mock('./components/WeatherClock', () => ({
-  __esModule: true,
-  default: () => <div>Mock Weather</div>,
-}))
-
 import App from './App'
 
 let originalFetch

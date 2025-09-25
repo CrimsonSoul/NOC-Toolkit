@@ -105,79 +105,63 @@ function App() {
   };
 
   return (
-    <div className="fade-in" style={{ fontFamily: 'DM Sans, sans-serif', background: 'var(--bg-primary)', color: 'var(--text-light)', minHeight: '100vh', padding: '2rem' }}>
+    <div className="app-shell fade-in">
       <Toaster position="top-right" toastOptions={toastOptions} />
-      <div style={{ position: 'fixed', top: '1rem', right: '1rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', padding: '0.5rem 1rem', textAlign: 'center', fontSize: '0.9rem' }}>
-        <div style={{ fontSize: '1.6rem', fontWeight: 'bold' }}>Code: {currentCode}</div>
-        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Prev: {previousCode || 'N/A'}</div>
+      <div className="code-widget">
+        <div className="code-widget__current">Code: {currentCode}</div>
+        <div className="code-widget__previous">Prev: {previousCode || 'N/A'}</div>
         <div className="progress-container">
           <div key={progressKey} className="progress-bar" />
         </div>
       </div>
-      {logoAvailable ? (
-        <img src="logo.png" alt="NOC List Logo" style={{ width: '200px', marginBottom: '1rem' }} />
-      ) : (
-        <pre style={{
-          fontFamily: 'monospace',
-          fontSize: '1rem',
-          marginBottom: '1rem',
-          lineHeight: '1.2',
-        }}>
-          {`    _   ______  ______   __    _      __
+      <header className="app-header">
+        {logoAvailable ? (
+          <img src="logo.png" alt="NOC List Logo" className="app-logo" />
+        ) : (
+          <pre
+            style={{
+              fontFamily: 'monospace',
+              fontSize: '1rem',
+              margin: 0,
+              lineHeight: '1.2',
+            }}
+          >
+            {`    _   ______  ______   __    _      __
    / | / / __ \/ ____/  / /   (_)____/ /_
   /  |/ / / / / /      / /   / / ___/ __/
  / /|  / /_/ / /___   / /___/ (__  ) /_
 /_/ |_|\____/\____/  /_____/_/____/\__/`}
-        </pre>
-      )}
-      <div style={{ fontFamily: 'DM Sans, sans-serif', display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-      <div
-        className="stack-on-small"
-        style={{
-      gap: '2rem',
-      borderBottom: '1px solid var(--border-color)',
-      paddingBottom: '0.5rem',
-      marginBottom: '1.5rem',
-      fontSize: '1.05rem'
-    }}>
-      <div
-        onClick={() => setTab('email')}
-        style={{
-          cursor: 'pointer',
-          paddingBottom: '0.25rem',
-          borderBottom: tab === 'email' ? '3px solid var(--accent)' : '3px solid transparent',
-          color: tab === 'email' ? 'var(--text-light)' : 'var(--text-muted)',
-          fontWeight: tab === 'email' ? 'bold' : 'normal'
-        }}
-      >
-        Email Groups
-      </div>
-      <div
-        onClick={() => setTab('contact')}
-        style={{
-          cursor: 'pointer',
-          paddingBottom: '0.25rem',
-          borderBottom: tab === 'contact' ? '3px solid var(--accent)' : '3px solid transparent',
-          color: tab === 'contact' ? 'var(--text-light)' : 'var(--text-muted)',
-          fontWeight: tab === 'contact' ? 'bold' : 'normal'
-        }}
-      >
-        Contact Search
-      </div>
-    </div>
-      </div>
+          </pre>
+        )}
+        <p className="header-note">Pick a tab and follow the simple steps to build your email list.</p>
+      </header>
 
-      <div
-        className="stack-on-small"
-        style={{ fontFamily: 'DM Sans, sans-serif', gap: '1rem', marginBottom: '1rem' }}>
+      <nav className="tab-strip stack-on-small">
+        <button
+          type="button"
+          onClick={() => setTab('email')}
+          className={`tab-button ${tab === 'email' ? 'active' : ''}`}
+        >
+          Email Groups
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('contact')}
+          className={`tab-button ${tab === 'contact' ? 'active' : ''}`}
+        >
+          Contact Search
+        </button>
+      </nav>
 
-<button
+      <div className="refresh-row stack-on-small">
+        <button
           onClick={refreshData}
-          className="btn"
+          className="btn btn-secondary"
         >
           Refresh Data
         </button>
-        <span style={{ alignSelf: 'center', fontSize: '0.9rem' }}>Last Refreshed: {lastRefresh}</span>
+        <span className="refresh-note">Last refreshed: {lastRefresh}</span>
+        <span className="refresh-hint">Tap refresh if the sheets change.</span>
       </div>
 
       {tab === 'email' ? (

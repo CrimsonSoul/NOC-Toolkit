@@ -204,14 +204,19 @@ function App() {
             <div className="app-header-controls">
               <TabSelector tab={tab} setTab={setTab} />
 
-              {tab !== 'radar' && (
-                <div className="app-toolbar">
-                  <button onClick={refreshData} className="btn btn-ghost">
-                    Refresh
-                  </button>
-                  <span className="app-toolbar-meta">Updated {lastRefresh}</span>
-                </div>
-              )}
+              <div
+                className={`app-toolbar${tab === 'radar' ? ' app-toolbar--hidden' : ''}`}
+                aria-hidden={tab === 'radar'}
+              >
+                <button
+                  onClick={refreshData}
+                  className="btn btn-ghost"
+                  tabIndex={tab === 'radar' ? -1 : undefined}
+                >
+                  Refresh
+                </button>
+                <span className="app-toolbar-meta">Updated {lastRefresh}</span>
+              </div>
             </div>
           </div>
         </div>

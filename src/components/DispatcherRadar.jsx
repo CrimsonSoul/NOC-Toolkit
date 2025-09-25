@@ -1,10 +1,29 @@
-import React, { useState, memo } from 'react'
+import React, { useState, useEffect, memo } from 'react'
+import { toast } from 'react-hot-toast'
 
 /**
  * Embeds the Dispatcher Radar page and provides a fallback if it fails to load.
  */
 const DispatcherRadar = () => {
   const [error, setError] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
+
+  useEffect(() => {
+    if (!window.nocListAPI?.onRadarCacheCleared) return
+
+    const unsubscribe = window.nocListAPI.onRadarCacheCleared((result = { status: 'success' }) => {
+      if (result.status === 'success') {
+        toast.success('Radar cache cleared. Reloading…')
+        setError(false)
+        setReloadKey((prev) => prev + 1)
+      } else {
+        const message = result.message ? `: ${result.message}` : ''
+        toast.error(`Failed to refresh radar${message}`)
+      }
+    })
+
+    return unsubscribe
+  }, [])
 
   return (
     <div className="radar-container">
@@ -26,6 +45,7 @@ const DispatcherRadar = () => {
             src="https://cw-intra-web/CWDashboard/Home/Radar"
             title="Dispatcher Radar"
             className="radar-frame minimal-scrollbar"
+            key={reloadKey}
             onError={() => setError(true)}
           />
         </div>

@@ -126,4 +126,25 @@ describe('EmailGroups', () => {
 
     expect(addEmailMock).toHaveBeenCalledWith('bianca@example.com')
   })
+
+  it('disables add button when the contact is already included', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <EmailGroups
+        emailData={sampleData}
+        adhocEmails={['bianca@example.com']}
+        selectedGroups={[]}
+        setSelectedGroups={() => {}}
+        setAdhocEmails={() => {}}
+        contactData={sampleContacts}
+        addAdhocEmail={() => 'duplicate'}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: /Add Individual Contacts/i }))
+
+    const disabledButton = await screen.findByRole('button', { name: /Already Added/i })
+    expect(disabledButton).toBeDisabled()
+  })
 })

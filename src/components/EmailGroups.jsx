@@ -127,6 +127,10 @@ const EmailGroups = ({
     [mergedEmails, removedEmails],
   )
 
+  const activeEmailSet = useMemo(() => {
+    return new Set(activeEmails.map((email) => email.toLowerCase()))
+  }, [activeEmails])
+
   useEffect(() => {
     setRemovedEmails((prev) => {
       if (prev.length === 0) return prev
@@ -439,13 +443,19 @@ const EmailGroups = ({
 
             <div className="contact-picker__list minimal-scrollbar">
               {filteredContacts.length > 0 ? (
-                filteredContacts.map((contact) => (
-                  <article key={contact.key} className="contact-picker__item">
-                    <div className="contact-picker__identity">
-                      <div className="contact-picker__avatar">{contact.initials}</div>
-                      <div>
-                        <h3 className="contact-picker__name">{contact.raw.Name || contact.email || 'Unknown'}</h3>
-                        {contact.raw.Title && (
+                filteredContacts.map((contact) => {
+                  const normalizedEmail = contact.email?.toLowerCase()
+                  const isAlreadyAdded = normalizedEmail
+                    ? activeEmailSet.has(normalizedEmail)
+                    : false
+
+                  return (
+                    <article key={contact.key} className="contact-picker__item">
+                      <div className="contact-picker__identity">
+                        <div className="contact-picker__avatar">{contact.initials}</div>
+                        <div>
+                          <h3 className="contact-picker__name">{contact.raw.Name || contact.email || 'Unknown'}</h3>
+                          {contact.raw.Title && (
                           <p className="contact-picker__title">{contact.raw.Title}</p>
                         )}
                       </div>
@@ -469,13 +479,18 @@ const EmailGroups = ({
                         type="button"
                         className="btn btn-outline btn-small"
                         onClick={() => handleAddContactEmail(contact)}
-                        disabled={!addAdhocEmail || !contact.email}
+                        disabled={!addAdhocEmail || !contact.email || isAlreadyAdded}
                       >
-                        {contact.email ? 'Add to List' : 'Email Unavailable'}
+                        {!contact.email
+                          ? 'Email Unavailable'
+                          : isAlreadyAdded
+                            ? 'Already Added'
+                            : 'Add to List'}
                       </button>
                     </div>
-                  </article>
-                ))
+                    </article>
+                  )
+                })
               ) : (
                 <div className="empty-state">No contacts match your search.</div>
               )}

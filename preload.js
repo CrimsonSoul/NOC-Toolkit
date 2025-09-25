@@ -51,4 +51,15 @@ contextBridge.exposeInMainWorld('nocListAPI', {
     }
     console.error(`Blocked external URL: ${url}`)
   },
+
+  /**
+   * Listen for dispatcher radar cache events from the main process.
+   * @param {(result: {status: 'success' | 'error', message?: string}) => void} callback
+   */
+  onRadarCacheCleared: (callback) => {
+    const channel = 'radar-cache-cleared'
+    const handler = (_event, payload) => callback(payload)
+    ipcRenderer.on(channel, handler)
+    return () => ipcRenderer.off(channel, handler)
+  },
 })

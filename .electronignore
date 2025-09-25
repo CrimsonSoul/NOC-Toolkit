@@ -1,0 +1,12 @@
+# Exclude development-only sources and tooling from the packaged app
+/dist/dev
+/node_modules/.cache
+/release
+/src
+/public
+/start-app.js
+/vite.config.js
+/vitest.config.js
+*.test.js
+*.md
+logo.txt

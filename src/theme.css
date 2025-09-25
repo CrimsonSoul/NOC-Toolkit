@@ -11,6 +11,9 @@
   --button-secondary-hover: #666666;
   --button-active: #777777;
   --button-text: #ffffff;
+  --button-important: #7f62ff;
+  --button-important-hover: #8d72ff;
+  --button-important-shadow: rgba(127, 98, 255, 0.45);
   --toast-success-bg: var(--button-bg);
   --toast-error-bg: #555555;
   --border-color: #444444;
@@ -68,6 +71,33 @@ body {
 .btn-secondary.active {
   background: var(--button-active);
   color: var(--button-text);
+}
+
+.btn-quiet {
+  background: var(--button-bg);
+  border: 1px solid var(--border-color);
+}
+
+.btn-quiet:hover {
+  background: var(--button-hover);
+  border-color: var(--button-secondary-hover);
+}
+
+.btn-important {
+  background: var(--button-important);
+  color: var(--text-light);
+  box-shadow: 0 0 16px var(--button-important-shadow);
+}
+
+.btn-important:hover {
+  background: var(--button-important-hover);
+  box-shadow: 0 0 18px var(--button-important-shadow);
+}
+
+.btn-important:active,
+.btn-important.active {
+  background: var(--button-active);
+  box-shadow: none;
 }
 
 .input {
@@ -186,6 +216,121 @@ body::-webkit-scrollbar-track {
 body::-webkit-scrollbar-thumb {
   background-color: var(--accent);
   border-radius: var(--radius);
+}
+
+.app-shell {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-light);
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+.app-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  max-width: 560px;
+}
+
+.app-logo {
+  width: 260px;
+  max-width: 100%;
+}
+
+.header-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+.code-widget {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.code-widget__current {
+  font-size: 1.6rem;
+  font-weight: bold;
+}
+
+.code-widget__previous {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.tab-strip {
+  display: flex;
+  gap: 2rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.tab-button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+  padding: 0 0 0.25rem;
+  border-bottom: 3px solid transparent;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.tab-button:hover,
+.tab-button:focus-visible {
+  color: var(--text-light);
+}
+
+.tab-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.tab-button.active {
+  color: var(--text-light);
+  border-bottom-color: var(--accent);
+  font-weight: 700;
+}
+
+.refresh-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.refresh-note {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.refresh-hint {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.helper-text {
+  margin: 0 0 0.75rem 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.info-card {
+  background: var(--bg-secondary);
+  padding: 1rem;
+  border-radius: var(--radius);
+  color: var(--text-light);
 }
 
 /* Progress bar for code timer */

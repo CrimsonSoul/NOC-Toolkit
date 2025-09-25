@@ -39,6 +39,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
           Open Contact List Excel
         </button>
       </div>
+      <p className="helper-text">Type a name or word to find the right person.</p>
       <div className="stack-on-small" style={{ alignItems: 'center', marginBottom: '1rem', gap: '0.5rem' }}>
         <div style={{ position: 'relative', flex: '1 1 250px', minWidth: 0, maxWidth: '300px' }}>
           <input

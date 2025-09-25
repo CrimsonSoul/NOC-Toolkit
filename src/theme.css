@@ -79,12 +79,12 @@ body {
   content: none;
 }
 
+
 .app-header-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: stretch;
-  justify-content: space-between;
-  gap: clamp(0.75rem, 1vw, 1.25rem);
+  gap: clamp(1rem, 1.3vw, 1.65rem);
   width: 100%;
 }
 
@@ -109,11 +109,11 @@ body {
   border-radius: 10px;
   border: 1px solid rgba(110, 142, 184, 0.25);
   background: rgba(16, 24, 35, 0.75);
-  min-width: clamp(70px, 9vw, 96px);
+  min-width: clamp(96px, 12vw, 148px);
 }
 
 .app-logo {
-  width: clamp(88px, 12vw, 128px);
+  width: clamp(120px, 16vw, 188px);
   max-width: 100%;
   height: auto;
 }
@@ -170,22 +170,25 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
-  gap: clamp(0.45rem, 0.8vw, 0.75rem);
+  justify-content: flex-start;
+  gap: clamp(0.55rem, 0.9vw, 0.85rem);
   min-width: 0;
+  width: 100%;
 }
 
 .app-header-controls .tab-selector {
   flex: 0 0 auto;
+  margin-right: auto;
 }
 
 .app-toolbar {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   min-width: 0;
   font-size: 0.82rem;
+  margin-left: auto;
 }
 
 .app-toolbar-meta {
@@ -302,6 +305,25 @@ body {
 .btn.btn-secondary.active {
   background: rgba(26, 36, 50, 0.95);
   border-color: rgba(76, 139, 245, 0.65);
+}
+
+.btn.btn-accent {
+  background: var(--accent);
+  border-color: rgba(76, 139, 245, 0.85);
+  color: var(--button-text);
+  box-shadow: 0 14px 32px rgba(76, 139, 245, 0.25);
+}
+
+.btn.btn-accent:hover {
+  background: var(--button-hover);
+  border-color: rgba(76, 139, 245, 0.95);
+}
+
+.btn.btn-accent:active,
+.btn.btn-accent.active {
+  background: var(--button-active);
+  border-color: rgba(76, 139, 245, 0.95);
+  box-shadow: 0 8px 18px rgba(76, 139, 245, 0.22);
 }
 
 .btn.btn-outline {
@@ -490,9 +512,14 @@ body {
     width: 100%;
   }
 
+  .app-header-controls .tab-selector {
+    margin-right: 0;
+  }
+
   .app-toolbar {
     flex-wrap: wrap;
     justify-content: flex-start;
+    margin-left: 0;
   }
 
   .app-toolbar-meta {
@@ -646,15 +673,6 @@ a[href^="mailto:"]:hover {
   border: none;
   display: block;
   background: transparent;
-  filter: saturate(0.85) contrast(1.12) brightness(0.9) hue-rotate(-4deg);
-}
-
-.radar-frame-overlay {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: rgba(5, 9, 16, 0.55);
-  mix-blend-mode: normal;
 }
 
 .radar-fallback {

@@ -217,10 +217,10 @@ const EmailGroups = ({
       {activeEmails.length > 0 && (
         <>
           <div className="email-actions">
-            <button onClick={copyToClipboard} className="btn">
+            <button onClick={copyToClipboard} className="btn btn-secondary">
               Copy Email List
             </button>
-            <button onClick={launchTeams} className="btn btn-secondary">
+            <button onClick={launchTeams} className="btn btn-accent">
               Start Teams Meeting
             </button>
             {copied && <span className="copied-indicator">Copied</span>}

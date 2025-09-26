@@ -17,53 +17,33 @@ vi.mock('./components/ContactSearch', () => ({
 
 import App from './App'
 
-let originalFetch
 let originalNocListAPI
 
 beforeEach(() => {
-  originalFetch = global.fetch
   originalNocListAPI = window.nocListAPI
   localStorage.clear()
 })
 
 afterEach(() => {
-  global.fetch = originalFetch
   window.nocListAPI = originalNocListAPI
 })
 
 describe('App', () => {
-  it('renders fallback branding when logo is unavailable', () => {
-    global.fetch = vi.fn(() =>
-      Promise.resolve({ ok: false, json: () => Promise.resolve({}) }),
-    )
+  it('renders application branding in the header', () => {
     window.nocListAPI = {
       loadExcelData: async () => ({ emailData: [], contactData: [] }),
       onExcelDataUpdate: () => () => {},
       onExcelWatchError: () => () => {},
     }
-    render(<App />)
-    expect(screen.getByLabelText(/noc list logo/i)).toBeInTheDocument()
-  })
 
-  it('shows image when logo file is available', async () => {
-    global.fetch = vi.fn(() =>
-      Promise.resolve({ ok: true, json: () => Promise.resolve({}) }),
-    )
-    window.nocListAPI = {
-      loadExcelData: async () => ({ emailData: [], contactData: [] }),
-      onExcelDataUpdate: () => () => {},
-      onExcelWatchError: () => () => {},
-    }
     render(<App />)
-    expect(await screen.findByAltText(/noc list logo/i)).toBeInTheDocument()
-})
+
+    expect(screen.getByLabelText(/noc toolkit/i)).toBeInTheDocument()
+    expect(screen.getByText(/noc toolkit/i)).toBeInTheDocument()
+  })
 
   it('adds a contact email to the ad-hoc list from contact search', async () => {
     const user = userEvent.setup()
-
-    global.fetch = vi.fn(() =>
-      Promise.resolve({ ok: false, json: () => Promise.resolve({}) }),
-    )
 
     const loadExcelData = vi.fn().mockResolvedValue({
       emailData: [

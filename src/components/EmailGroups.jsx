@@ -96,6 +96,7 @@ const EmailGroups = ({
         email: findEmailAddress(contact),
         initials: getContactInitials(contact?.Name),
         phone: phoneValue,
+        formattedPhone: formatPhones(phoneValue),
         searchText: Object.values(contact)
           .map((value) => (value == null ? '' : String(value)))
           .join(' ')
@@ -471,7 +472,7 @@ const EmailGroups = ({
                       </div>
                       <div>
                         <span className="label">Phone</span>
-                        <span>{formatPhones(contact.phone) || 'Not available'}</span>
+                        <span>{contact.formattedPhone || 'Not available'}</span>
                       </div>
                     </div>
                     <div className="contact-picker__actions">

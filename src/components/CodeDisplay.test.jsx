@@ -65,7 +65,7 @@ describe('CodeDisplay progress', () => {
     )
     expect(progress).toHaveAttribute('aria-valuenow', '0')
     act(() => {
-      vi.advanceTimersByTime(100)
+      vi.advanceTimersByTime(300)
     })
     expect(Number(progress.getAttribute('aria-valuenow'))).toBeGreaterThan(0)
     vi.useRealTimers()

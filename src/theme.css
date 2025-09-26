@@ -69,14 +69,17 @@ body {
 
 .app-header-card {
   position: relative;
-  padding: clamp(0.32rem, 0.5vw + 0.18rem, 0.65rem) clamp(0.55rem, 0.85vw, 0.9rem);
+  padding: clamp(0.32rem, 0.5vw + 0.18rem, 0.65rem) clamp(0.55rem, 0.85vw, 0.9rem)
+    clamp(0.4rem, 0.55vw + 0.2rem, 0.7rem);
   border-radius: 14px;
   background: rgba(12, 19, 29, 0.9);
   border: 1px solid rgba(110, 142, 184, 0.45);
   box-shadow: var(--shadow-sm);
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) max-content;
-  grid-template-areas: 'cluster code status';
+  grid-template-areas:
+    'cluster code status'
+    'tabs tabs tabs';
   align-items: center;
   column-gap: clamp(0.55rem, 1vw, 1.2rem);
   row-gap: clamp(0.25rem, 0.5vw, 0.55rem);
@@ -96,20 +99,29 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.18rem 0.5rem;
-  border-radius: 8px;
-  border: 1px solid rgba(110, 142, 184, 0.22);
-  background: rgba(16, 24, 35, 0.75);
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  padding: clamp(0.16rem, 0.28vw, 0.25rem) clamp(0.68rem, 1.05vw, 1.12rem);
+  border-radius: 999px;
+  border: 1px solid rgba(110, 142, 184, 0.32);
+  background: linear-gradient(135deg, rgba(18, 26, 38, 0.92), rgba(14, 21, 32, 0.88));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  font-weight: 650;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  font-size: clamp(0.82rem, 0.95vw, 0.98rem);
+  font-size: clamp(0.86rem, 0.98vw, 0.99rem);
   white-space: nowrap;
-  line-height: 1.05;
+  line-height: 1.08;
   min-height: 0;
 }
 
-.app-header__cluster .tab-selector {
+.app-header__tabs {
+  grid-area: tabs;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+}
+
+.app-header__tabs .tab-selector {
+  width: 100%;
   min-width: 0;
 }
 
@@ -134,6 +146,13 @@ body {
   margin-top: 0.2rem;
 }
 
+.app-header__code .code-display__value {
+  font-size: clamp(1.04rem, 1.32vw, 1.18rem);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  font-variant-numeric: tabular-nums;
+}
+
 .app-header__status {
   grid-area: status;
   display: grid;
@@ -155,7 +174,7 @@ body {
 }
 
 .app-header__status .clock__date {
-  font-size: 0.72rem;
+  font-size: clamp(0.7rem, 0.8vw, 0.78rem);
 }
 
 .app-header__refresh {
@@ -175,7 +194,7 @@ body {
 
 .app-header__timestamp {
   color: var(--text-muted);
-  font-size: 0.75rem;
+  font-size: clamp(0.7rem, 0.85vw, 0.8rem);
   font-variant-numeric: tabular-nums;
 }
 
@@ -190,14 +209,16 @@ body {
 }
 
 .clock__time {
-  font-size: 1.1rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-size: clamp(1.02rem, 1.28vw, 1.16rem);
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
 }
 
 .clock__date {
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: clamp(0.72rem, 0.84vw, 0.8rem);
+  letter-spacing: 0.04em;
 }
 
 
@@ -206,7 +227,8 @@ body {
     grid-template-columns: minmax(0, 1fr) max-content;
     grid-template-areas:
       'cluster status'
-      'code status';
+      'code status'
+      'tabs tabs';
     align-items: start;
   }
 
@@ -231,7 +253,8 @@ body {
     grid-template-areas:
       'cluster'
       'status'
-      'code';
+      'code'
+      'tabs';
   }
 
   .app-header__status {
@@ -812,6 +835,10 @@ body {
 .text-center { text-align: center; }
 .line-tight { line-height: 1.2; }
 .large-bold { font-size: 1.3rem; font-weight: 700; }
+
+.app-header .large-bold {
+  font-size: clamp(1.05rem, 1.35vw, 1.2rem);
+}
 .small-text { font-size: 0.9rem; }
 .small-muted { font-size: 0.9rem; color: var(--text-muted); }
 .text-muted { color: var(--text-muted); }

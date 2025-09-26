@@ -37,6 +37,26 @@ contextBridge.exposeInMainWorld('nocListAPI', {
   },
 
   /**
+   * Listen for authentication challenges that require user credentials.
+   * @param {(payload: any) => void} callback
+   */
+  onAuthChallenge: (callback) => {
+    if (typeof callback !== 'function') {
+      return () => {}
+    }
+    const channel = 'auth-challenge'
+    const handler = (_event, payload) => callback(payload)
+    ipcRenderer.on(channel, handler)
+    return () => ipcRenderer.off(channel, handler)
+  },
+
+  /**
+   * Provide credentials or cancel an authentication request.
+   * @param {{id: number, username?: string, password?: string, cancel?: boolean}} payload
+   */
+  provideAuthCredentials: (payload) => ipcRenderer.invoke('auth-provide-credentials', payload),
+
+  /**
    * Open an external URL in the user's default browser.
    * @param {string} url
    */

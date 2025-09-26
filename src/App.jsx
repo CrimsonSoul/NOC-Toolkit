@@ -266,36 +266,34 @@ function App() {
                   </div>
                 )}
               </div>
-              <div className="identity-card__content">
-                <div className="identity-card__code">
-                  <CodeDisplay
-                    currentCode={currentCode}
-                    previousCode={previousCode}
-                    progressKey={progressKey}
-                    intervalMs={intervalMs}
+              <div className="identity-card__code">
+                <CodeDisplay
+                  currentCode={currentCode}
+                  previousCode={previousCode}
+                  progressKey={progressKey}
+                  intervalMs={intervalMs}
+                />
+              </div>
+              <div className="identity-card__meta">
+                <Clock />
+                <div
+                  className={`identity-card__refresh${tab === 'radar' ? ' identity-card__refresh--hidden' : ''}`}
+                  aria-hidden={tab === 'radar'}
+                >
+                  <button
+                    onClick={refreshData}
+                    className="btn btn-ghost"
+                    tabIndex={tab === 'radar' ? -1 : undefined}
                   >
-                    <Clock />
-                  </CodeDisplay>
+                    Refresh
+                  </button>
+                  <span className="identity-card__timestamp">Updated {lastRefresh}</span>
                 </div>
               </div>
             </div>
 
             <div className="app-header-actions">
               <TabSelector tab={tab} setTab={setTab} />
-
-              <div
-                className={`app-toolbar${tab === 'radar' ? ' app-toolbar--hidden' : ''}`}
-                aria-hidden={tab === 'radar'}
-              >
-                <button
-                  onClick={refreshData}
-                  className="btn btn-ghost"
-                  tabIndex={tab === 'radar' ? -1 : undefined}
-                >
-                  Refresh
-                </button>
-                <span className="app-toolbar-meta">Updated {lastRefresh}</span>
-              </div>
             </div>
           </div>
         </div>

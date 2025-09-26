@@ -1114,15 +1114,29 @@ a[href^="mailto:"]:hover {
 }
 
 
-.contact-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: clamp(1rem, 1.6vw, 1.5rem);
-  width: 100%;
-  padding: 0;
-  margin: 0;
+.contact-list-scroll {
   padding-top: var(--contact-header-height);
   margin-top: calc(-1 * var(--contact-header-height));
+  width: 100%;
+  border-radius: 18px;
+}
+
+.contact-list__row {
+  display: grid;
+  grid-template-columns: repeat(var(--contact-columns, 1), minmax(280px, 1fr));
+  gap: clamp(1rem, 1.6vw, 1.5rem);
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.contact-card-wrapper {
+  display: flex;
+  min-width: 0;
+}
+
+.contact-card-wrapper > .contact-card {
+  flex: 1;
 }
 
 .contact-card {

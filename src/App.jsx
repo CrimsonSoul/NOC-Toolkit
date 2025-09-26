@@ -5,6 +5,7 @@ import CodeDisplay from './components/CodeDisplay'
 import Clock from './components/Clock'
 import TabSelector from './components/TabSelector'
 import DispatcherRadar from './components/DispatcherRadar'
+import AuthPrompt from './components/AuthPrompt'
 import { Toaster, toast } from 'react-hot-toast'
 import useRotatingCode from './hooks/useRotatingCode'
 
@@ -19,6 +20,9 @@ function App() {
   const [radarMounted, setRadarMounted] = useState(tab === 'radar')
   const { currentCode, previousCode, progressKey, intervalMs } = useRotatingCode()
   const headerRef = useRef(null)
+  const [authChallenge, setAuthChallenge] = useState(null)
+  const [authSubmitting, setAuthSubmitting] = useState(false)
+  const lastAuthUsername = useRef('')
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -63,6 +67,23 @@ function App() {
       })
     }
     return () => cleanup && cleanup()
+  }, [])
+
+  useEffect(() => {
+    if (!window.nocListAPI?.onAuthChallenge) {
+      return undefined
+    }
+
+    const unsubscribe = window.nocListAPI.onAuthChallenge((challenge) => {
+      setAuthSubmitting(false)
+      setAuthChallenge({
+        ...challenge,
+        usernameHint:
+          challenge?.usernameHint || challenge?.username || lastAuthUsername.current || '',
+      })
+    })
+
+    return unsubscribe
   }, [])
 
   /** Manually refresh Excel data and clear any ad-hoc emails. */
@@ -139,6 +160,66 @@ function App() {
     if (tab === 'radar') setRadarMounted(true)
   }, [tab])
 
+  const handleAuthSubmit = useCallback(
+    async ({ username, password }) => {
+      if (!authChallenge) return
+
+      try {
+        setAuthSubmitting(true)
+
+        if (!window.nocListAPI?.provideAuthCredentials) {
+          throw new Error('Authentication bridge unavailable.')
+        }
+
+        const result = await window.nocListAPI.provideAuthCredentials({
+          id: authChallenge.id,
+          username,
+          password,
+        })
+
+        if (!result || result.status === 'error') {
+          throw new Error(result?.message || 'Unable to send credentials.')
+        }
+
+        lastAuthUsername.current = username
+        setAuthChallenge(null)
+      } catch (error) {
+        console.error('Failed to submit credentials:', error)
+        toast.error(error?.message || 'Unable to send credentials.')
+      } finally {
+        setAuthSubmitting(false)
+      }
+    },
+    [authChallenge],
+  )
+
+  const handleAuthCancel = useCallback(async () => {
+    if (!authChallenge) {
+      setAuthChallenge(null)
+      return
+    }
+
+    try {
+      setAuthSubmitting(true)
+
+      if (!window.nocListAPI?.provideAuthCredentials) {
+        throw new Error('Authentication bridge unavailable.')
+      }
+
+      await window.nocListAPI.provideAuthCredentials({
+        id: authChallenge.id,
+        cancel: true,
+      })
+
+      setAuthChallenge(null)
+    } catch (error) {
+      console.error('Failed to cancel authentication request:', error)
+      toast.error(error?.message || 'Unable to dismiss prompt.')
+    } finally {
+      setAuthSubmitting(false)
+    }
+  }, [authChallenge])
+
   const toastOptions = useMemo(
     () => ({
       style: {
@@ -199,7 +280,7 @@ function App() {
               </div>
             </div>
 
-            <div className="app-header-controls">
+            <div className="app-header-actions">
               <TabSelector tab={tab} setTab={setTab} />
 
               <div
@@ -253,6 +334,16 @@ function App() {
           </div>
         )}
       </main>
+
+      {authChallenge ? (
+        <AuthPrompt
+          key={authChallenge.id}
+          challenge={authChallenge}
+          submitting={authSubmitting}
+          onSubmit={handleAuthSubmit}
+          onCancel={handleAuthCancel}
+        />
+      ) : null}
     </div>
   )
 }

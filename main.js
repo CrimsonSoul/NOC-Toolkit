@@ -13,6 +13,8 @@ let cachedData = { emailData: [], contactData: [] }
 const isMac = process.platform === 'darwin'
 
 const DEBOUNCE_DELAY = 250
+const pendingAuthRequests = new Map()
+let authRequestIdCounter = 0
 
 /**
  * Simple debounce helper to limit how often a function can run.
@@ -183,6 +185,19 @@ function createWindow() {
   })
 }
 
+function cleanupAuthRequestsForContents(contentsId) {
+  for (const [id, entry] of pendingAuthRequests.entries()) {
+    if (entry.contentsId === contentsId) {
+      try {
+        entry.callback()
+      } catch (error) {
+        console.error('Failed to cancel authentication request:', error)
+      }
+      pendingAuthRequests.delete(id)
+    }
+  }
+}
+
 function handleRadarCacheRefresh() {
   if (!win || win.isDestroyed()) {
     return
@@ -298,6 +313,56 @@ function setupApplicationMenu() {
 }
 
 if (process.env.NODE_ENV !== 'test') {
+  app.on('web-contents-created', (_event, contents) => {
+    contents.on('destroyed', () => {
+      cleanupAuthRequestsForContents(contents.id)
+    })
+  })
+
+  app.on('login', (event, webContents, request, authInfo, callback) => {
+    event.preventDefault()
+
+    if (!webContents || webContents.isDestroyed()) {
+      callback()
+      return
+    }
+
+    const sourceWindow = BrowserWindow.fromWebContents(webContents)
+    if (!sourceWindow || sourceWindow.isDestroyed()) {
+      callback()
+      return
+    }
+
+    const requestId = ++authRequestIdCounter
+
+    pendingAuthRequests.set(requestId, {
+      callback,
+      contentsId: webContents.id,
+    })
+
+    const payload = {
+      id: requestId,
+      url: request?.url || '',
+      method: request?.method || '',
+      referrer: request?.referrer || '',
+      isProxy: !!authInfo?.isProxy,
+      scheme: authInfo?.scheme || '',
+      host: authInfo?.host || '',
+      port: typeof authInfo?.port === 'number' ? authInfo.port : null,
+      realm: authInfo?.realm || '',
+      previousFailureCount: authInfo?.previousFailureCount || 0,
+      usernameHint: authInfo?.username || '',
+    }
+
+    try {
+      webContents.send('auth-challenge', payload)
+    } catch (error) {
+      console.error('Failed to forward authentication challenge:', error)
+      pendingAuthRequests.delete(requestId)
+      callback()
+    }
+  })
+
   app.whenReady().then(async () => {
     createWindow()
     setupApplicationMenu()
@@ -336,6 +401,30 @@ if (process.env.NODE_ENV !== 'test') {
 
   ipcMain.handle('open-external-link', async (_event, url) => {
     await safeOpenExternalLink(url)
+  })
+
+  ipcMain.handle('auth-provide-credentials', async (_event, payload = {}) => {
+    const { id, username, password, cancel } = payload
+
+    if (typeof id !== 'number' || !pendingAuthRequests.has(id)) {
+      return { status: 'error', message: 'Authentication request not found.' }
+    }
+
+    const entry = pendingAuthRequests.get(id)
+    pendingAuthRequests.delete(id)
+
+    try {
+      if (cancel || !username) {
+        entry.callback()
+        return { status: 'cancelled' }
+      }
+
+      entry.callback(username, password ?? '')
+      return { status: 'ok' }
+    } catch (error) {
+      console.error('Failed to resolve authentication request:', error)
+      return { status: 'error', message: error?.message || String(error) }
+    }
   })
 }
 

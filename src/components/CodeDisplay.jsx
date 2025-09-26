@@ -11,25 +11,36 @@ import React, { useEffect, useRef, useState } from 'react'
  */
 const CodeDisplay = ({ currentCode, previousCode, progressKey, intervalMs, children }) => {
   const [progress, setProgress] = useState(0)
-
-  const rafRef = useRef()
+  const timerRef = useRef()
 
   useEffect(() => {
     setProgress(0)
-    let start
 
-    const step = (timestamp) => {
-      if (start === undefined) start = timestamp
-      const elapsed = timestamp - start
+    const getNow = () => (typeof performance !== 'undefined' ? performance.now() : Date.now())
+    const start = getNow()
+
+    const update = () => {
+      const elapsed = getNow() - start
       const percent = Math.min(100, (elapsed / intervalMs) * 100)
       setProgress(percent)
-      if (elapsed < intervalMs) {
-        rafRef.current = requestAnimationFrame(step)
+
+      if (elapsed >= intervalMs) {
+        clearInterval(timerRef.current)
+        timerRef.current = undefined
       }
     }
 
-    rafRef.current = requestAnimationFrame(step)
-    return () => cancelAnimationFrame(rafRef.current)
+    update()
+
+    const interval = Math.max(200, Math.min(1000, intervalMs / 20))
+    timerRef.current = setInterval(update, interval)
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+        timerRef.current = undefined
+      }
+    }
   }, [progressKey, intervalMs])
 
   const hasPrevious = Boolean(previousCode)

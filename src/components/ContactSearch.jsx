@@ -27,20 +27,6 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
   const itemRefs = useRef([])
   const [activeIndex, setActiveIndex] = useState(-1)
 
-  const indexedContacts = useMemo(
-    () =>
-      contactData.map((c) => ({
-        ...c,
-        _search: Object.values(c).join(' ').toLowerCase(),
-      })),
-    [contactData],
-  )
-
-  const filtered = useMemo(() => {
-    const q = deferredQuery.toLowerCase()
-    return indexedContacts.filter((c) => c._search.includes(q))
-  }, [deferredQuery, indexedContacts])
-
   const getContactKey = useCallback((contact, index) => {
     return (
       contact?.Email ||
@@ -52,6 +38,32 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
       index
     )
   }, [])
+
+  const indexedContacts = useMemo(
+    () =>
+      contactData.map((contact, index) => {
+        const values = Object.values(contact).map((value) =>
+          value == null ? '' : String(value),
+        )
+        const searchText = values.join(' ').toLowerCase()
+        const emailAddress = findEmailAddress(contact)
+
+        return {
+          raw: contact,
+          key: getContactKey(contact, index),
+          emailAddress,
+          initials: getContactInitials(contact?.Name),
+          formattedPhone: formatPhones(contact?.Phone),
+          searchText,
+        }
+      }),
+    [contactData, getContactKey],
+  )
+
+  const filtered = useMemo(() => {
+    const q = deferredQuery.trim().toLowerCase()
+    return q ? indexedContacts.filter((contact) => contact.searchText.includes(q)) : indexedContacts
+  }, [deferredQuery, indexedContacts])
 
   useEffect(() => {
     if (activeIndex >= 0) {
@@ -168,8 +180,8 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
       {filtered.length > 0 ? (
         <div className="contact-list">
           {filtered.map((contact, index) => {
-            const initials = getContactInitials(contact.Name)
-            const emailAddress = findEmailAddress(contact)
+            const { raw, emailAddress, initials, formattedPhone, key } = contact
+            const displayName = raw?.Name || emailAddress || 'Unknown'
 
             const handleAddToList = () => {
               if (!emailAddress) {
@@ -189,12 +201,12 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
             }
 
             return (
-              <article key={getContactKey(contact, index)} className="contact-card">
+              <article key={key} className="contact-card">
                 <div className="contact-card__header">
                   <div className="contact-card__avatar">{initials}</div>
                   <div>
-                    <h3 className="contact-card__name">{contact.Name}</h3>
-                    {contact.Title && <p className="contact-card__title">{contact.Title}</p>}
+                    <h3 className="contact-card__name">{displayName}</h3>
+                    {raw?.Title && <p className="contact-card__title">{raw.Title}</p>}
                   </div>
                 </div>
 
@@ -210,7 +222,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
                 </div>
                 <div className="contact-card__row">
                   <span className="label">Phone</span>
-                  <span>{formatPhones(contact.Phone) || 'N/A'}</span>
+                  <span>{formattedPhone || 'N/A'}</span>
                 </div>
 
                 <div className="contact-card__actions">

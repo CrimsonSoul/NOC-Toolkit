@@ -96,23 +96,28 @@ function App() {
         return 'invalid'
       }
 
-      const alreadyExists = adhocEmails.some(
-        (existing) => existing.toLowerCase() === normalized,
-      )
+      let status = 'added'
 
-      if (alreadyExists) {
-        return 'duplicate'
-      }
+      setAdhocEmails((prev) => {
+        const alreadyExists = prev.some(
+          (existing) => existing.toLowerCase() === normalized,
+        )
 
-      setAdhocEmails((prev) => [...prev, cleaned])
+        if (alreadyExists) {
+          status = 'duplicate'
+          return prev
+        }
 
-      if (switchToEmailTab) {
+        return [...prev, cleaned]
+      })
+
+      if (status === 'added' && switchToEmailTab) {
         setTab('email')
       }
 
-      return 'added'
+      return status
     },
-    [adhocEmails, isValidEmail, setTab],
+    [isValidEmail, setTab],
   )
 
   useLayoutEffect(() => {

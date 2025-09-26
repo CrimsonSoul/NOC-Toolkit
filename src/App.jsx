@@ -9,6 +9,15 @@ import AuthPrompt from './components/AuthPrompt'
 import { Toaster, toast } from 'react-hot-toast'
 import useRotatingCode from './hooks/useRotatingCode'
 
+const refreshTimestampFormatter = new Intl.DateTimeFormat(undefined, {
+  month: 'numeric',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+})
+
+const formatRefreshTimestamp = (date) => refreshTimestampFormatter.format(date)
+
 function App() {
   const [selectedGroups, setSelectedGroups] = useState([])
   const [adhocEmails, setAdhocEmails] = useState([])
@@ -30,7 +39,7 @@ function App() {
     const { emailData, contactData } = await window.nocListAPI.loadExcelData()
     setEmailData(emailData)
     setContactData(contactData)
-    setLastRefresh(new Date().toLocaleString())
+    setLastRefresh(formatRefreshTimestamp(new Date()))
   }, [])
 
   useEffect(() => {
@@ -44,7 +53,7 @@ function App() {
         toast.success('Excel files updated automatically!')
         setEmailData(data.emailData || [])
         setContactData(data.contactData || [])
-        setLastRefresh(new Date().toLocaleString())
+        setLastRefresh(formatRefreshTimestamp(new Date()))
       })
     }
     return () => cleanup && cleanup()
@@ -283,7 +292,7 @@ function App() {
         </div>
       </header>
 
-      <main className="app-main">
+      <main className={`app-main${tab === 'radar' ? ' app-main--radar' : ''}`}>
         {tab === 'email' && (
           <div className="module-card">
             <EmailGroups

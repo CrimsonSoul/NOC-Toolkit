@@ -53,7 +53,7 @@ body {
 
 .app-shell {
   min-height: 100vh;
-  padding: clamp(1.5rem, 1.8vw + 1rem, 3rem);
+  padding: clamp(1.25rem, 1.4vw + 0.9rem, 2.6rem);
   display: flex;
   flex-direction: column;
   gap: var(--app-shell-gap);
@@ -62,20 +62,20 @@ body {
 
 .app-header {
   position: sticky;
-  top: clamp(0.5rem, 1.5vw, 1.5rem);
+  top: clamp(0.4rem, 1.2vw, 1.25rem);
   z-index: 12;
 }
 
 .app-header-card {
   position: relative;
-  padding: clamp(0.65rem, 0.85vw + 0.45rem, 1.05rem);
+  padding: clamp(0.5rem, 0.7vw + 0.35rem, 0.9rem);
   border-radius: 18px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
-  gap: clamp(0.75rem, 0.9vw, 1rem);
+  gap: clamp(0.6rem, 0.75vw, 0.85rem);
 }
 
 .app-header-card::after {
@@ -87,7 +87,7 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(240px, 1fr);
   align-items: center;
-  gap: clamp(0.75rem, 1vw, 1rem);
+  gap: clamp(0.65rem, 0.9vw, 0.9rem);
   width: 100%;
 }
 
@@ -96,8 +96,8 @@ body {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: clamp(0.6rem, 0.85vw, 1.05rem);
-  padding: clamp(0.55rem, 0.8vw, 0.9rem) clamp(0.7rem, 1vw, 1rem);
+  gap: clamp(0.45rem, 0.75vw, 0.95rem);
+  padding: clamp(0.45rem, 0.7vw, 0.8rem) clamp(0.6rem, 0.9vw, 0.9rem);
   border-radius: 14px;
   border: 1px solid rgba(110, 142, 184, 0.45);
   background: rgba(12, 19, 29, 0.72);
@@ -113,7 +113,7 @@ body {
   border-radius: 10px;
   border: 1px solid rgba(110, 142, 184, 0.25);
   background: rgba(16, 24, 35, 0.75);
-  min-width: clamp(110px, 13vw, 180px);
+  min-width: clamp(100px, 11vw, 170px);
 }
 
 .app-logo {
@@ -611,10 +611,11 @@ body {
 
 .tab-selector {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 0.35rem;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 0.28rem;
   border: 1px solid rgba(110, 142, 184, 0.35);
-  padding: 0.25rem 0.3rem;
+  padding: 0.22rem 0.3rem;
   border-radius: 11px;
   background: rgba(14, 21, 31, 0.6);
   backdrop-filter: blur(16px);
@@ -622,7 +623,7 @@ body {
 
 .tab-button {
   cursor: pointer;
-  padding: 0.32rem 0.75rem;
+  padding: 0.28rem 0.65rem;
   border-radius: 7px;
   border: 1px solid transparent;
   background: transparent;
@@ -853,6 +854,13 @@ body {
   }
 }
 
+@media (max-width: 720px) {
+  .tab-selector {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+}
+
 @media (max-width: 640px) {
   .identity-card {
     text-align: center;
@@ -900,6 +908,7 @@ body {
   }
 
   .tab-selector {
+    grid-auto-flow: row;
     width: 100%;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   }
@@ -907,6 +916,7 @@ body {
 
 @media (max-width: 420px) {
   .tab-selector {
+    grid-auto-flow: row;
     grid-template-columns: 1fr;
   }
 }
@@ -920,6 +930,7 @@ body {
   .tab-selector {
     align-self: stretch;
     width: 100%;
+    grid-auto-flow: row;
     grid-template-columns: 1fr;
   }
 

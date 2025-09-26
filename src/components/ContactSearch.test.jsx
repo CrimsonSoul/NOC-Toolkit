@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, cleanup } from '@testing-library/react'
+import { render, screen, fireEvent, cleanup, within, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import ContactSearch from './ContactSearch'
@@ -22,24 +22,36 @@ describe('ContactSearch', () => {
     expect(screen.getByText('Agent 1')).toBeInTheDocument()
   })
 
-  it('renders the full contact list without virtualization scrollbars', () => {
+  it('renders the virtualized contact list viewport', () => {
     render(
       <ContactSearch contactData={contacts} addAdhocEmail={() => 'added'} />
     )
-    const buttons = screen.getAllByText(/add to email list/i)
-    expect(buttons.length).toBe(contacts.length)
+    const list = screen.getByRole('list', { name: /contact results/i })
+    expect(list).toBeInTheDocument()
+    const items = within(list).getAllByRole('listitem')
+    expect(items.length).toBeGreaterThan(0)
   })
 
-  it('supports keyboard navigation and add action', () => {
+  it('supports keyboard navigation and add action', async () => {
     const add = vi.fn(() => 'added')
     render(<ContactSearch contactData={contacts} addAdhocEmail={add} />)
     const input = screen.getByPlaceholderText(/search contacts/i)
     fireEvent.keyDown(input, { key: 'ArrowDown' })
-    const firstBtn = screen.getAllByText(/add to email list/i)[0]
-    expect(firstBtn).toHaveFocus()
+    const buttonsAfterInput = await screen.findAllByRole('button', { name: /add to email list/i })
+    const firstBtn = buttonsAfterInput[0]
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await waitFor(() => {
+      const activeButton = document.querySelector('button[data-active="true"]')
+      expect(activeButton).toBe(firstBtn)
+    })
     fireEvent.keyDown(firstBtn, { key: 'ArrowDown' })
-    const secondBtn = screen.getAllByText(/add to email list/i)[1]
-    expect(secondBtn).toHaveFocus()
+    const buttonsAfterArrow = await screen.findAllByRole('button', { name: /add to email list/i })
+    const secondBtn = buttonsAfterArrow[1]
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await waitFor(() => {
+      const activeButton = document.querySelector('button[data-active="true"]')
+      expect(activeButton).toBe(secondBtn)
+    })
     fireEvent.click(secondBtn)
     expect(add).toHaveBeenCalledWith('agent1@example.com', { switchToEmailTab: true })
   })

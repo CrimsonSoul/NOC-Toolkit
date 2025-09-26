@@ -107,10 +107,9 @@ const EmailGroups = ({
 
   const filteredContacts = useMemo(() => {
     const term = contactQuery.trim().toLowerCase()
-    const list = term
+    return term
       ? indexedContacts.filter((contact) => contact.searchText.includes(term))
       : indexedContacts
-    return list.slice(0, 250)
   }, [contactQuery, indexedContacts])
 
   const groupMap = useMemo(
@@ -496,9 +495,15 @@ const EmailGroups = ({
                 <div className="empty-state">No contacts match your search.</div>
               )}
             </div>
-            {!contactQuery && indexedContacts.length > filteredContacts.length && (
+            {indexedContacts.length > filteredContacts.length && (
               <p className="small-muted m-0">
-                Showing the first {filteredContacts.length} contacts. Use search to find others.
+                Showing the first {filteredContacts.length.toLocaleString()} contacts. Use search to
+                find others.
+              </p>
+            )}
+            {contactQuery && filteredContacts.length > 0 && indexedContacts.length === filteredContacts.length && (
+              <p className="small-muted m-0">
+                Found {filteredContacts.length.toLocaleString()} matching contacts.
               </p>
             )}
           </div>

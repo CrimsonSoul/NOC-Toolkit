@@ -16,7 +16,6 @@ function App() {
   const [contactData, setContactData] = useState([])
   const [lastRefresh, setLastRefresh] = useState('N/A')
   const [tab, setTab] = useState(() => localStorage.getItem('activeTab') || 'email')
-  const [logoAvailable, setLogoAvailable] = useState(false)
   const [radarMounted, setRadarMounted] = useState(tab === 'radar')
   const { currentCode, previousCode, progressKey, intervalMs } = useRotatingCode()
   const headerRef = useRef(null)
@@ -37,14 +36,6 @@ function App() {
   useEffect(() => {
     loadData()
   }, [loadData])
-
-  useEffect(() => {
-    fetch('logo.png', { method: 'HEAD' })
-      .then((res) => {
-        if (res.ok) setLogoAvailable(true)
-      })
-      .catch(() => {})
-  }, [])
 
   useEffect(() => {
     let cleanup
@@ -254,46 +245,34 @@ function App() {
 
       <header className="app-header" ref={headerRef}>
         <div className="app-header-card">
-          <div className="app-header-row">
-            <div className="identity-card">
-              <div className="identity-card__figure">
-                {logoAvailable ? (
-                  <img src="logo.png" alt="NOC List logo" className="app-logo" />
-                ) : (
-                  <div className="app-logo-fallback" aria-label="NOC List logo">
-                    <span>NOC</span>
-                    <span>LIST</span>
-                  </div>
-                )}
-              </div>
-              <div className="identity-card__code">
-                <CodeDisplay
-                  currentCode={currentCode}
-                  previousCode={previousCode}
-                  progressKey={progressKey}
-                  intervalMs={intervalMs}
-                />
-              </div>
-              <div className="identity-card__meta">
-                <Clock />
-                <div
-                  className={`identity-card__refresh${tab === 'radar' ? ' identity-card__refresh--hidden' : ''}`}
-                  aria-hidden={tab === 'radar'}
-                >
-                  <button
-                    onClick={refreshData}
-                    className="btn btn-ghost"
-                    tabIndex={tab === 'radar' ? -1 : undefined}
-                  >
-                    Refresh
-                  </button>
-                  <span className="identity-card__timestamp">Updated {lastRefresh}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="app-header-actions">
-              <TabSelector tab={tab} setTab={setTab} />
+          <div className="app-header__cluster">
+            <span className="app-header__title" aria-label="NOC Toolkit">
+              NOC Toolkit
+            </span>
+            <TabSelector tab={tab} setTab={setTab} />
+          </div>
+          <div className="app-header__code">
+            <CodeDisplay
+              currentCode={currentCode}
+              previousCode={previousCode}
+              progressKey={progressKey}
+              intervalMs={intervalMs}
+            />
+          </div>
+          <div className="app-header__status">
+            <Clock />
+            <div
+              className={`app-header__refresh${tab === 'radar' ? ' app-header__refresh--hidden' : ''}`}
+              aria-hidden={tab === 'radar'}
+            >
+              <button
+                onClick={refreshData}
+                className="btn btn-ghost"
+                tabIndex={tab === 'radar' ? -1 : undefined}
+              >
+                Refresh
+              </button>
+              <span className="app-header__timestamp">Updated {lastRefresh}</span>
             </div>
           </div>
         </div>

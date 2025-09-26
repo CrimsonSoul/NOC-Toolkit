@@ -192,9 +192,10 @@ function App() {
                     previousCode={previousCode}
                     progressKey={progressKey}
                     intervalMs={intervalMs}
-                  />
+                  >
+                    <Clock />
+                  </CodeDisplay>
                 </div>
-                <Clock />
               </div>
             </div>
 

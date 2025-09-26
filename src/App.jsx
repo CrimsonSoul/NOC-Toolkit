@@ -249,7 +249,6 @@ function App() {
             <span className="app-header__title" aria-label="NOC Toolkit">
               NOC Toolkit
             </span>
-            <TabSelector tab={tab} setTab={setTab} />
           </div>
           <div className="app-header__code">
             <CodeDisplay
@@ -274,6 +273,9 @@ function App() {
               </button>
               <span className="app-header__timestamp">Updated {lastRefresh}</span>
             </div>
+          </div>
+          <div className="app-header__tabs">
+            <TabSelector tab={tab} setTab={setTab} />
           </div>
         </div>
       </header>

@@ -9,7 +9,7 @@ import React, { useEffect, useRef, useState } from 'react'
  * @param {number} props.progressKey - Forces animation restart when code updates.
  * @param {number} props.intervalMs - Duration of code validity in ms.
  */
-const CodeDisplay = ({ currentCode, previousCode, progressKey, intervalMs }) => {
+const CodeDisplay = ({ currentCode, previousCode, progressKey, intervalMs, children }) => {
   const [progress, setProgress] = useState(0)
 
   const rafRef = useRef()
@@ -36,11 +36,14 @@ const CodeDisplay = ({ currentCode, previousCode, progressKey, intervalMs }) => 
 
   return (
     <div className="code-display">
-      <div className="code-display__meta">
-        <span className="small-text text-muted">Current Code</span>
-        {hasPrevious && <span className="small-muted">Prev: {previousCode}</span>}
+      <div className="code-display__header">
+        <div className="code-display__meta">
+          <span className="small-text text-muted">Current Code</span>
+          {hasPrevious && <span className="code-display__previous small-muted">Prev: {previousCode}</span>}
+        </div>
+        {children && <div className="code-display__aside">{children}</div>}
       </div>
-      <div className="large-bold" aria-live="polite">
+      <div className="code-display__code large-bold" aria-live="polite">
         {currentCode}
       </div>
       <div

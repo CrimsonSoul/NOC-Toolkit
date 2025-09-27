@@ -1,7 +1,20 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import EmailGroups from './components/EmailGroups'
 import ContactSearch from './components/ContactSearch'
 import { Toaster, toast } from 'react-hot-toast'
+
+const EMPTY_EXCEL_DATA = { emailData: [], contactData: [] }
+
+const sanitizeExcelData = (data) => {
+  if (!data || typeof data !== 'object') {
+    return { ...EMPTY_EXCEL_DATA }
+  }
+
+  const emailData = Array.isArray(data.emailData) ? data.emailData : []
+  const contactData = Array.isArray(data.contactData) ? data.contactData : []
+
+  return { emailData, contactData }
+}
 
 function App() {
   const [selectedGroups, setSelectedGroups] = useState([])
@@ -17,23 +30,38 @@ function App() {
 
   const generateCode = () => Math.floor(10000 + Math.random() * 90000).toString()
 
-  useEffect(() => {
-    const { emailData, contactData } = window.nocListAPI.loadExcelData()
-    setEmailData(emailData)
-    setContactData(contactData)
-    setLastRefresh(new Date().toLocaleString())
-    setCurrentCode(generateCode())
-    setProgressKey(Date.now())
+  const loadExcelData = useCallback(() => {
+    try {
+      return sanitizeExcelData(window.nocListAPI?.loadExcelData?.())
+    } catch (error) {
+      console.error('Failed to load Excel data', error)
+      return { ...EMPTY_EXCEL_DATA }
+    }
   }, [])
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setPreviousCode(currentCode)
-      setCurrentCode(generateCode())
+    const { emailData, contactData } = loadExcelData()
+    setEmailData(emailData)
+    setContactData(contactData)
+    setLastRefresh(new Date().toLocaleString())
+  }, [loadExcelData])
+
+  useEffect(() => {
+    const updateCode = () => {
+      setCurrentCode(prev => {
+        if (prev) {
+          setPreviousCode(prev)
+        }
+        return generateCode()
+      })
       setProgressKey(Date.now())
-    }, 5 * 60 * 1000)
+    }
+
+    updateCode()
+
+    const interval = setInterval(updateCode, 5 * 60 * 1000)
     return () => clearInterval(interval)
-  }, [currentCode])
+  }, [])
 
   useEffect(() => {
     fetch('logo.png', { method: 'HEAD' })
@@ -44,18 +72,27 @@ function App() {
   }, [])
 
   useEffect(() => {
-    if (window.nocListAPI?.onExcelDataUpdate) {
-      window.nocListAPI.onExcelDataUpdate((data) => {
-        toast.success('Excel files updated automatically!')
-        setEmailData(data.emailData || [])
-        setContactData(data.contactData || [])
-        setLastRefresh(new Date().toLocaleString())
-      })
+    if (!window.nocListAPI?.onExcelDataUpdate) {
+      return undefined
+    }
+
+    const unsubscribe = window.nocListAPI.onExcelDataUpdate((data) => {
+      toast.success('Excel files updated automatically!')
+      const sanitized = sanitizeExcelData(data)
+      setEmailData(sanitized.emailData)
+      setContactData(sanitized.contactData)
+      setLastRefresh(new Date().toLocaleString())
+    })
+
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe()
+      }
     }
   }, [])
 
   const refreshData = () => {
-    const { emailData, contactData } = window.nocListAPI.loadExcelData()
+    const { emailData, contactData } = loadExcelData()
     setEmailData(emailData)
     setContactData(contactData)
     setLastRefresh(new Date().toLocaleString())

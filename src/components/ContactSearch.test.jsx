@@ -13,9 +13,11 @@ const contacts = Array.from({ length: 20 }, (_, i) => ({
 afterEach(() => cleanup())
 
 describe('ContactSearch', () => {
-  it('filters contacts without crashing on non-string values', () => {
+  it('filters contacts without crashing on malformed entries', () => {
+    const mixedContacts = [...contacts, null, undefined, 42, 'invalid']
+
     render(
-      <ContactSearch contactData={contacts} addAdhocEmail={() => 'added'} />
+      <ContactSearch contactData={mixedContacts} addAdhocEmail={() => 'added'} />
     )
     const input = screen.getByPlaceholderText(/search contacts/i)
     fireEvent.change(input, { target: { value: 'Agent 1' } })

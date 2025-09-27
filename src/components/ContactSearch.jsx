@@ -53,26 +53,34 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
     )
   }, [])
 
-  const indexedContacts = useMemo(
-    () =>
-      contactData.map((contact, index) => {
-        const values = Object.values(contact).map((value) =>
-          value == null ? '' : String(value),
-        )
-        const searchText = values.join(' ').toLowerCase()
-        const emailAddress = findEmailAddress(contact)
+  const indexedContacts = useMemo(() => {
+    if (!Array.isArray(contactData)) {
+      return []
+    }
 
-        return {
-          raw: contact,
-          key: getContactKey(contact, index),
-          emailAddress,
-          initials: getContactInitials(contact?.Name),
-          formattedPhone: formatPhones(contact?.Phone),
-          searchText,
-        }
-      }),
-    [contactData, getContactKey],
-  )
+    return contactData.reduce((acc, contact, index) => {
+      if (!contact || typeof contact !== 'object') {
+        return acc
+      }
+
+      const values = Object.values(contact).map((value) =>
+        value == null ? '' : String(value),
+      )
+      const searchText = values.join(' ').toLowerCase()
+      const emailAddress = findEmailAddress(contact)
+
+      acc.push({
+        raw: contact,
+        key: getContactKey(contact, index),
+        emailAddress,
+        initials: getContactInitials(contact?.Name),
+        formattedPhone: formatPhones(contact?.Phone),
+        searchText,
+      })
+
+      return acc
+    }, [])
+  }, [contactData, getContactKey])
 
   const filtered = useMemo(() => {
     const q = deferredQuery.trim().toLowerCase()

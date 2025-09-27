@@ -36,10 +36,30 @@ function App() {
 
   /** Load group and contact data from the preloaded Excel files. */
   const loadData = useCallback(async () => {
-    const { emailData, contactData } = await window.nocListAPI.loadExcelData()
-    setEmailData(emailData)
-    setContactData(contactData)
-    setLastRefresh(formatRefreshTimestamp(new Date()))
+    if (!window.nocListAPI?.loadExcelData) {
+      console.error('Excel bridge unavailable: unable to load data.')
+      toast.error('Unable to load Excel data: desktop bridge unavailable.')
+      setEmailData([])
+      setContactData([])
+      setLastRefresh('N/A')
+      return false
+    }
+
+    try {
+      const { emailData: nextEmailData = [], contactData: nextContactData = [] } =
+        await window.nocListAPI.loadExcelData()
+      setEmailData(nextEmailData)
+      setContactData(nextContactData)
+      setLastRefresh(formatRefreshTimestamp(new Date()))
+      return true
+    } catch (error) {
+      console.error('Failed to load Excel data:', error)
+      toast.error('Unable to load Excel data. Please try again.')
+      setEmailData([])
+      setContactData([])
+      setLastRefresh('N/A')
+      return false
+    }
   }, [])
 
   useEffect(() => {
@@ -88,9 +108,11 @@ function App() {
 
   /** Manually refresh Excel data and clear any ad-hoc emails. */
   const refreshData = useCallback(async () => {
-    await loadData()
-    setAdhocEmails([])
-    toast.success('Data refreshed')
+    const refreshed = await loadData()
+    if (refreshed) {
+      setAdhocEmails([])
+      toast.success('Data refreshed')
+    }
   }, [loadData])
 
   const isValidEmail = useCallback((email) => emailRegex.test(email), [])

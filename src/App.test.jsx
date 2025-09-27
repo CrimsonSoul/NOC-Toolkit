@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { toast } from 'react-hot-toast'
 import '@testing-library/jest-dom/vitest'
 
 vi.mock('./components/ContactSearch', () => ({
@@ -18,14 +19,34 @@ vi.mock('./components/ContactSearch', () => ({
 import App from './App'
 
 let originalNocListAPI
+let originalMatchMedia
 
 beforeEach(() => {
   originalNocListAPI = window.nocListAPI
+  originalMatchMedia = window.matchMedia
+
+  if (!window.matchMedia) {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      configurable: true,
+      value: vi.fn().mockImplementation((query) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    })
+  }
   localStorage.clear()
 })
 
 afterEach(() => {
   window.nocListAPI = originalNocListAPI
+  window.matchMedia = originalMatchMedia
 })
 
 describe('App', () => {
@@ -40,6 +61,26 @@ describe('App', () => {
 
     expect(screen.getByLabelText(/noc toolkit/i)).toBeInTheDocument()
     expect(screen.getByText(/noc toolkit/i)).toBeInTheDocument()
+  })
+
+  it('handles a missing preload bridge without crashing', async () => {
+    window.nocListAPI = undefined
+    const toastErrorSpy = vi.spyOn(toast, 'error')
+
+    try {
+      render(<App />)
+
+      const brandLabels = screen.getAllByLabelText(/noc toolkit/i)
+      expect(brandLabels.length).toBeGreaterThan(0)
+
+      await waitFor(() => {
+        expect(toastErrorSpy).toHaveBeenCalledWith(
+          expect.stringMatching(/unable to load excel data/i),
+        )
+      })
+    } finally {
+      toastErrorSpy.mockRestore()
+    }
   })
 
   it('adds a contact email to the ad-hoc list from contact search', async () => {

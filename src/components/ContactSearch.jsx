@@ -17,7 +17,7 @@ import { findEmailAddress, getContactInitials } from '../utils/findEmailAddress'
 const MIN_COLUMN_WIDTH = 320
 const MIN_LIST_HEIGHT = 320
 const LIST_BOTTOM_PADDING = 24
-const DEFAULT_ROW_HEIGHT = 260
+const DEFAULT_ROW_HEIGHT = 340
 
 /**
  * Provide a searchable list of contacts with quick email adding.
@@ -35,6 +35,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
   const listRef = useRef(null)
   const itemRefs = useRef(new Map())
   const sizeMapRef = useRef(new Map())
+  const resizeObserversRef = useRef(new Map())
   const [activeIndex, setActiveIndex] = useState(-1)
   const [columnCount, setColumnCount] = useState(1)
   const [listHeight, setListHeight] = useState(MIN_LIST_HEIGHT)
@@ -105,6 +106,8 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
   useEffect(() => {
     itemRefs.current = new Map()
     sizeMapRef.current = new Map()
+    resizeObserversRef.current.forEach((observer) => observer.disconnect())
+    resizeObserversRef.current = new Map()
     listRef.current?.resetAfterIndex?.(0, true)
   }, [filtered, columnCount])
 
@@ -199,6 +202,43 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
     }
   }, [])
 
+  const registerRow = useCallback(
+    (index, node) => {
+      const observers = resizeObserversRef.current
+      const previousObserver = observers.get(index)
+      previousObserver?.disconnect()
+
+      if (!node) {
+        observers.delete(index)
+        return
+      }
+
+      const measure = () => {
+        const measuredHeight = Math.max(
+          node.scrollHeight || 0,
+          node.offsetHeight || 0,
+          Math.ceil(node.getBoundingClientRect().height || 0),
+        )
+
+        const height = measuredHeight > 0 ? Math.max(measuredHeight, DEFAULT_ROW_HEIGHT) : DEFAULT_ROW_HEIGHT
+        setRowHeight(index, height)
+      }
+
+      measure()
+
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(() => measure())
+      }
+
+      if (typeof ResizeObserver !== 'undefined') {
+        const observer = new ResizeObserver(() => measure())
+        observer.observe(node)
+        observers.set(index, observer)
+      }
+    },
+    [setRowHeight],
+  )
+
   const setItemRef = useCallback((index, node) => {
     if (node) {
       itemRefs.current.set(index, node)
@@ -284,13 +324,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
                 <div
                   style={{ ...style, width: listWidth, '--contact-columns': columnCount }}
                   className="contact-list__row"
-                  ref={(node) => {
-                    if (node) {
-                      const measuredHeight = node.getBoundingClientRect().height
-                      const height = measuredHeight > 0 ? measuredHeight : DEFAULT_ROW_HEIGHT
-                      setRowHeight(index, height)
-                    }
-                  }}
+                  ref={(node) => registerRow(index, node)}
                   data-row-index={index}
                 >
                   {row.map((contact, columnIndex) => {

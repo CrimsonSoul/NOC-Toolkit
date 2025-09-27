@@ -12,6 +12,34 @@ let watcher
 let cachedData = { emailData: [], contactData: [] }
 const isMac = process.platform === 'darwin'
 
+/**
+ * Resolve an icon path for the application window if one exists.
+ *
+ * Electron expects the icon file to live alongside the executable in
+ * production, but during development we keep the assets in the repo.
+ * Some environments only provide an `.ico` file while others expect a
+ * `.png`, so we search through a list of sensible locations and return
+ * the first match. Returning `undefined` allows Electron to fall back to
+ * its default icon instead of throwing an error when a custom icon is
+ * missing.
+ */
+function resolveWindowIcon() {
+  const candidatePaths = [
+    path.join(basePath, 'icon.png'),
+    path.join(basePath, 'icon.ico'),
+    path.join(__dirname, 'public', 'icon.png'),
+    path.join(__dirname, 'public', 'icon.ico'),
+  ]
+
+  for (const candidate of candidatePaths) {
+    if (fs.existsSync(candidate)) {
+      return candidate
+    }
+  }
+
+  return undefined
+}
+
 const DEBOUNCE_DELAY = 250
 const pendingAuthRequests = new Map()
 let authRequestIdCounter = 0
@@ -161,17 +189,23 @@ async function safeOpenExternalLink(url) {
  * Create the main browser window.
  */
 function createWindow() {
-  win = new BrowserWindow({
+  const windowIcon = resolveWindowIcon()
+  const windowOptions = {
     width: 1000,
     height: 800,
-    icon: path.join(basePath, 'icon.png'),
     show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       sandbox: false
     }
-  })
+  }
+
+  if (windowIcon) {
+    windowOptions.icon = windowIcon
+  }
+
+  win = new BrowserWindow(windowOptions)
 
   if (app.isPackaged) {
     win.loadFile(path.join(__dirname, 'dist', 'index.html'))

@@ -31,9 +31,15 @@ function run(command, args, options = {}) {
 function parseSigningIdentity() {
   const cliArgs = process.argv.slice(2);
   let identityFromArgs;
+  let skipRequested = false;
 
   for (let index = 0; index < cliArgs.length; index += 1) {
     const arg = cliArgs[index];
+
+    if (arg === '--skip-signing') {
+      skipRequested = true;
+      continue;
+    }
 
     if (arg === '--signing-identity' || arg === '--identity') {
       identityFromArgs = cliArgs[index + 1];
@@ -51,13 +57,41 @@ function parseSigningIdentity() {
     }
   }
 
-  const identityFromEnv =
-    process.env.MAC_SIGNING_IDENTITY ?? process.env.SIGNING_IDENTITY ?? null;
+  if (skipRequested) {
+    return { identity: null, source: 'cli', skip: true };
+  }
 
-  const identity = identityFromArgs ?? identityFromEnv ?? '-';
+  const envSources = [
+    ['MAC_SIGNING_IDENTITY', process.env.MAC_SIGNING_IDENTITY],
+    ['SIGNING_IDENTITY', process.env.SIGNING_IDENTITY],
+    ['CSC_NAME', process.env.CSC_NAME],
+    ['CODESIGN_IDENTITY', process.env.CODESIGN_IDENTITY]
+  ];
+
+  let identity = identityFromArgs ?? null;
+  let source = identityFromArgs ? 'cli' : null;
+
+  if (!identity) {
+    for (const [envName, value] of envSources) {
+      if (typeof value === 'string' && value.trim() !== '') {
+        identity = value;
+        source = `env:${envName}`;
+        break;
+      }
+    }
+  }
+
+  if (!identity) {
+    return { identity: null, source: null, skip: false };
+  }
+
   const trimmed = identity.trim();
 
-  return trimmed === '' ? '-' : trimmed;
+  if (trimmed === '') {
+    return { identity: null, source: null, skip: false };
+  }
+
+  return { identity: trimmed, source, skip: false };
 }
 
 function generateMacIcon() {
@@ -135,22 +169,39 @@ function main() {
       '--prune=true'
     ]);
 
-    const signingIdentity = parseSigningIdentity();
+    const { identity: signingIdentity, source: identitySource, skip } = parseSigningIdentity();
     const appPath = join(
       'release',
       'NOCList-darwin-arm64',
       'NOCList.app'
     );
 
-    if (signingIdentity === '-') {
-      console.log('Skipping macOS code signing (no identity provided).');
+    if (skip) {
+      console.log('Skipping macOS code signing (requested via --skip-signing).');
+    } else if (!signingIdentity) {
+      throw new Error(
+        [
+          'No macOS signing identity provided.',
+          'Pass one with `--signing-identity` or set an environment variable such as',
+          'MAC_SIGNING_IDENTITY, SIGNING_IDENTITY, CSC_NAME, or CODESIGN_IDENTITY.',
+          'Use --skip-signing to package without signing.'
+        ].join(' ')
+      );
     } else {
-      console.log(`Signing macOS app using identity: ${signingIdentity}`);
+      const identityDetails = identitySource ? ` (${identitySource})` : '';
+      console.log(`Signing macOS app using identity${identityDetails}: ${signingIdentity}`);
       run('npx', [
         'electron-osx-sign',
         appPath,
         '--identity',
         signingIdentity
+      ]);
+      run('codesign', [
+        '--verify',
+        '--deep',
+        '--strict',
+        '--verbose=2',
+        appPath
       ]);
     }
   } catch (error) {

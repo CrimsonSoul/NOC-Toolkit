@@ -142,17 +142,17 @@ function main() {
       'NOCList.app'
     );
 
-    console.log(`Signing macOS app using identity: ${signingIdentity}`);
-    const signingArgs =
-      signingIdentity === '-'
-        ? ['--identity=-']
-        : ['--identity', signingIdentity];
-
-    run('npx', [
-      'electron-osx-sign',
-      appPath,
-      ...signingArgs
-    ]);
+    if (signingIdentity === '-') {
+      console.log('Skipping macOS code signing (no identity provided).');
+    } else {
+      console.log(`Signing macOS app using identity: ${signingIdentity}`);
+      run('npx', [
+        'electron-osx-sign',
+        appPath,
+        '--identity',
+        signingIdentity
+      ]);
+    }
   } catch (error) {
     console.error(error.message || error);
     process.exitCode = 1;

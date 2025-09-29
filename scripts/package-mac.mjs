@@ -179,12 +179,12 @@ function main() {
     if (skip) {
       console.log('Skipping macOS code signing (requested via --skip-signing).');
     } else if (!signingIdentity) {
-      throw new Error(
+      console.warn(
         [
-          'No macOS signing identity provided.',
-          'Pass one with `--signing-identity` or set an environment variable such as',
+          'No macOS signing identity provided. The app will be packaged without code signing.',
+          'To sign the app, pass an identity with `--signing-identity` or set an environment variable such as',
           'MAC_SIGNING_IDENTITY, SIGNING_IDENTITY, CSC_NAME, or CODESIGN_IDENTITY.',
-          'Use --skip-signing to package without signing.'
+          'Use --skip-signing to silence this warning when signing is intentionally skipped.'
         ].join(' ')
       );
     } else {

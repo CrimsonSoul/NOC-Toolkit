@@ -143,11 +143,15 @@ function main() {
     );
 
     console.log(`Signing macOS app using identity: ${signingIdentity}`);
+    const signingArgs =
+      signingIdentity === '-'
+        ? ['--identity=-']
+        : ['--identity', signingIdentity];
+
     run('npx', [
       'electron-osx-sign',
       appPath,
-      '--identity',
-      signingIdentity
+      ...signingArgs
     ]);
   } catch (error) {
     console.error(error.message || error);

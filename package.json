@@ -6,7 +6,10 @@
     "start": "node start-app.js",
     "test": "vitest",
     "build": "vite build",
-    "package": "npm run build && electron-packager . NOCList --platform=win32 --arch=x64 --overwrite --out=release --icon=public/icon.ico --asar --prune=true"
+    "package": "npm run build && electron-packager . NOCList --platform=win32 --arch=x64 --overwrite --out=release --icon=public/icon.ico --asar --prune=true",
+    "prepackage:mac": "node scripts/manage-mac-icon.mjs generate",
+    "package:mac": "npm run build && electron-packager . NOCList --platform=darwin --arch=arm64 --overwrite --out=release --icon=public/icon.icns --asar --prune=true",
+    "postpackage:mac": "node scripts/manage-mac-icon.mjs cleanup"
   },
   "dependencies": {
     "chokidar": "^3.6.0",
@@ -23,6 +26,7 @@
     "@testing-library/user-event": "^14.6.1",
     "@vitejs/plugin-react": "^4.0.0",
     "electron-packager": "^17.1.2",
+    "png2icons": "^2.0.1",
     "jsdom": "^26.1.0",
     "vite": "^5.0.0",
     "vitest": "^3.2.2"

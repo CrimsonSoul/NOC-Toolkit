@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, rmSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { copySampleData } from './copy-sample-data.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -168,6 +169,8 @@ function main() {
       '--asar',
       '--prune=true'
     ]);
+
+    copySampleData({ targets: ['macos'] });
 
     const { identity: signingIdentity, source: identitySource, skip } = parseSigningIdentity();
     const appPath = join(

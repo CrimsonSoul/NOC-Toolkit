@@ -54,9 +54,10 @@ Build the React frontend and package the Electron app into a Windows executable:
 npm run package
 ```
 
-The generated `release/NOCList-win32-x64` folder will contain `NOCList.exe`. Place
-`groups.xlsx` and `contacts.xlsx` next to the executable so the application can
-load them at runtime.
+The generated `release/NOCList-win32-x64` folder will contain `NOCList.exe`.
+Sample `contacts.xlsx` and `groups.xlsx` files are copied into the directory
+automatically so the packaged build can load them at runtime without any manual
+steps.
 
 If `public/icon.ico` exists it will be used as the Windows
 application icon.
@@ -93,7 +94,8 @@ npm run package:mac -- --skip-signing
 
 When shipping the app to end users you must sign it with a valid
 identity and submit the resulting `.app` bundle for Apple notarization
-to avoid Gatekeeper warnings.
+to avoid Gatekeeper warnings. Packaged macOS bundles will also include
+the sample Excel files inside `NOCList.app/Contents/MacOS/` automatically.
 
 ## Continuous Integration
 

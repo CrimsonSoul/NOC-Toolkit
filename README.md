@@ -61,6 +61,31 @@ load them at runtime.
 If `public/icon.ico` exists it will be used as the Windows
 application icon.
 
+### macOS
+
+To create a macOS build, run the dedicated packaging script:
+
+```bash
+npm run package:mac
+```
+
+By default the script performs an ad-hoc code signing pass using
+`electron-osx-sign`. Provide a different signing identity for
+distribution (for example a Developer ID Application certificate) by
+setting an environment variable or passing an option:
+
+```bash
+MAC_SIGNING_IDENTITY="Developer ID Application: Example (TEAMID1234)" npm run package:mac
+
+# or
+
+npm run package:mac -- --signing-identity "Developer ID Application: Example (TEAMID1234)"
+```
+
+When shipping the app to end users you must sign it with a valid
+identity and submit the resulting `.app` bundle for Apple notarization
+to avoid Gatekeeper warnings.
+
 ## Continuous Integration
 
 A GitHub Actions workflow builds the Windows package on each push to `main`.

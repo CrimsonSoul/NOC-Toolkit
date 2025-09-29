@@ -28,6 +28,38 @@ function run(command, args, options = {}) {
   }
 }
 
+function parseSigningIdentity() {
+  const cliArgs = process.argv.slice(2);
+  let identityFromArgs;
+
+  for (let index = 0; index < cliArgs.length; index += 1) {
+    const arg = cliArgs[index];
+
+    if (arg === '--signing-identity' || arg === '--identity') {
+      identityFromArgs = cliArgs[index + 1];
+      index += 1;
+      continue;
+    }
+
+    if (arg.startsWith('--signing-identity=')) {
+      identityFromArgs = arg.split('=')[1];
+      continue;
+    }
+
+    if (arg.startsWith('--identity=')) {
+      identityFromArgs = arg.split('=')[1];
+    }
+  }
+
+  const identityFromEnv =
+    process.env.MAC_SIGNING_IDENTITY ?? process.env.SIGNING_IDENTITY ?? null;
+
+  const identity = identityFromArgs ?? identityFromEnv ?? '-';
+  const trimmed = identity.trim();
+
+  return trimmed === '' ? '-' : trimmed;
+}
+
 function generateMacIcon() {
   if (existsSync(iconTarget)) {
     return () => {};
@@ -101,6 +133,21 @@ function main() {
       '--icon=public/icon.icns',
       '--asar',
       '--prune=true'
+    ]);
+
+    const signingIdentity = parseSigningIdentity();
+    const appPath = join(
+      'release',
+      'NOCList-darwin-arm64',
+      'NOCList.app'
+    );
+
+    console.log(`Signing macOS app using identity: ${signingIdentity}`);
+    run('npx', [
+      'electron-osx-sign',
+      appPath,
+      '--identity',
+      signingIdentity
     ]);
   } catch (error) {
     console.error(error.message || error);

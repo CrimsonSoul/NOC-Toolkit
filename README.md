@@ -69,10 +69,9 @@ To create a macOS build, run the dedicated packaging script:
 npm run package:mac
 ```
 
-By default the script performs an ad-hoc code signing pass using
-`electron-osx-sign`. Provide a different signing identity for
-distribution (for example a Developer ID Application certificate) by
-setting an environment variable or passing an option:
+The script requires a valid signing identity so the resulting bundle can
+be opened on macOS without the "damaged" warning. Provide the identity
+via an environment variable or a command-line flag:
 
 ```bash
 MAC_SIGNING_IDENTITY="Developer ID Application: Example (TEAMID1234)" npm run package:mac
@@ -80,6 +79,16 @@ MAC_SIGNING_IDENTITY="Developer ID Application: Example (TEAMID1234)" npm run pa
 # or
 
 npm run package:mac -- --signing-identity "Developer ID Application: Example (TEAMID1234)"
+```
+
+The script also recognises the `SIGNING_IDENTITY`, `CSC_NAME`, and
+`CODESIGN_IDENTITY` environment variables.
+
+If you need to generate an unsigned build (for example to inspect the
+contents locally) you can opt out explicitly:
+
+```bash
+npm run package:mac -- --skip-signing
 ```
 
 When shipping the app to end users you must sign it with a valid

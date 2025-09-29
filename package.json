@@ -6,7 +6,8 @@
     "start": "node start-app.js",
     "test": "vitest",
     "build": "vite build",
-    "package": "npm run build && electron-packager . NOCList --platform=win32 --arch=x64 --overwrite --out=release --icon=public/icon.ico --asar --prune=true"
+    "package": "npm run build && electron-packager . NOCList --platform=win32 --arch=x64 --overwrite --out=release --icon=public/icon.ico --asar --prune=true",
+    "package:mac": "node scripts/package-mac.mjs"
   },
   "dependencies": {
     "chokidar": "^3.6.0",

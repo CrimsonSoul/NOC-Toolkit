@@ -1,0 +1,23 @@
+name: macOS Build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - run: npm install
+      - run: npm test
+      - run: npm run package:mac
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NOCList-darwin-arm64
+          path: release/NOCList-darwin-arm64

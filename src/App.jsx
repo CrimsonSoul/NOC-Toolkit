@@ -18,21 +18,34 @@ const refreshTimestampFormatter = new Intl.DateTimeFormat(undefined, {
 
 const formatRefreshTimestamp = (date) => refreshTimestampFormatter.format(date)
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const getStoredTabPreference = () => {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return null
+  }
+
+  try {
+    return window.localStorage.getItem('activeTab')
+  } catch (error) {
+    console.warn('Unable to read active tab preference:', error)
+    return null
+  }
+}
+
 function App() {
   const [selectedGroups, setSelectedGroups] = useState([])
   const [adhocEmails, setAdhocEmails] = useState([])
   const [emailData, setEmailData] = useState([])
   const [contactData, setContactData] = useState([])
   const [lastRefresh, setLastRefresh] = useState('N/A')
-  const [tab, setTab] = useState(() => localStorage.getItem('activeTab') || 'email')
+  const [tab, setTab] = useState(() => getStoredTabPreference() || 'email')
   const [radarMounted, setRadarMounted] = useState(tab === 'radar')
   const { currentCode, previousCode, progressKey, intervalMs } = useRotatingCode()
   const headerRef = useRef(null)
   const [authChallenge, setAuthChallenge] = useState(null)
   const [authSubmitting, setAuthSubmitting] = useState(false)
   const lastAuthUsername = useRef('')
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
   /** Load group and contact data from the preloaded Excel files. */
   const loadData = useCallback(async () => {
@@ -67,26 +80,30 @@ function App() {
   }, [loadData])
 
   useEffect(() => {
-    let cleanup
-    if (window.nocListAPI?.onExcelDataUpdate) {
-      cleanup = window.nocListAPI.onExcelDataUpdate((data) => {
-        toast.success('Excel files updated automatically!')
-        setEmailData(data.emailData || [])
-        setContactData(data.contactData || [])
-        setLastRefresh(formatRefreshTimestamp(new Date()))
-      })
+    if (!window.nocListAPI?.onExcelDataUpdate) {
+      return undefined
     }
-    return () => cleanup && cleanup()
+
+    const unsubscribe = window.nocListAPI.onExcelDataUpdate((data) => {
+      toast.success('Excel files updated automatically!')
+      setEmailData(data.emailData || [])
+      setContactData(data.contactData || [])
+      setLastRefresh(formatRefreshTimestamp(new Date()))
+    })
+
+    return () => unsubscribe?.()
   }, [])
 
   useEffect(() => {
-    let cleanup
-    if (window.nocListAPI?.onExcelWatchError) {
-      cleanup = window.nocListAPI.onExcelWatchError((msg) => {
-        toast.error(`Watcher error: ${msg}`)
-      })
+    if (!window.nocListAPI?.onExcelWatchError) {
+      return undefined
     }
-    return () => cleanup && cleanup()
+
+    const unsubscribe = window.nocListAPI.onExcelWatchError((msg) => {
+      toast.error(`Watcher error: ${msg}`)
+    })
+
+    return () => unsubscribe?.()
   }, [])
 
   useEffect(() => {
@@ -103,7 +120,7 @@ function App() {
       })
     })
 
-    return unsubscribe
+    return () => unsubscribe?.()
   }, [])
 
   /** Manually refresh Excel data and clear any ad-hoc emails. */
@@ -115,7 +132,7 @@ function App() {
     }
   }, [loadData])
 
-  const isValidEmail = useCallback((email) => emailRegex.test(email), [])
+  const isValidEmail = useCallback((email) => EMAIL_REGEX.test(email), [])
 
   /** Add a user-provided email to the current ad-hoc list if valid. */
   const addAdhocEmail = useCallback(
@@ -178,12 +195,22 @@ function App() {
   }, [])
 
   useEffect(() => {
-    localStorage.setItem('activeTab', tab)
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return
+    }
+
+    try {
+      window.localStorage.setItem('activeTab', tab)
+    } catch (error) {
+      console.warn('Unable to persist active tab preference:', error)
+    }
   }, [tab])
 
   useEffect(() => {
-    if (tab === 'radar') setRadarMounted(true)
-  }, [tab])
+    if (tab === 'radar' && !radarMounted) {
+      setRadarMounted(true)
+    }
+  }, [tab, radarMounted])
 
   const handleAuthSubmit = useCallback(
     async ({ username, password }) => {

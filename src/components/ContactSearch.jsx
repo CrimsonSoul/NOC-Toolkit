@@ -13,6 +13,8 @@ import { VariableSizeList } from 'react-window'
 import { toast } from 'react-hot-toast'
 import { formatPhones } from '../utils/formatPhones'
 import { findEmailAddress, getContactInitials } from '../utils/findEmailAddress'
+import { getPreferredPhoneValue } from '../utils/contactInfo'
+import { normalizeSearchText } from '../utils/normalizeText'
 
 const MIN_COLUMN_WIDTH = 260
 const MIN_LIST_HEIGHT = 320
@@ -85,18 +87,19 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
         return acc
       }
 
-      const values = Object.values(contact).map((value) =>
-        value == null ? '' : String(value),
-      )
-      const searchText = values.join(' ').toLowerCase()
       const emailAddress = findEmailAddress(contact)
+      const phoneValue = getPreferredPhoneValue(contact)
+      const searchText = Object.values(contact)
+        .map((value) => normalizeSearchText(value))
+        .filter(Boolean)
+        .join(' ')
 
       acc.push({
         raw: contact,
         key: getContactKey(contact, index),
         emailAddress,
         initials: getContactInitials(contact?.Name),
-        formattedPhone: formatPhones(contact?.Phone),
+        formattedPhone: formatPhones(phoneValue),
         searchText,
       })
 
@@ -105,7 +108,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
   }, [contactData, getContactKey])
 
   const filtered = useMemo(() => {
-    const q = deferredQuery.trim().toLowerCase()
+    const q = normalizeSearchText(deferredQuery)
     return q ? indexedContacts.filter((contact) => contact.searchText.includes(q)) : indexedContacts
   }, [deferredQuery, indexedContacts])
 
@@ -567,6 +570,11 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
                         return
                       }
 
+                      if (typeof addAdhocEmail !== 'function') {
+                        toast.error('Adding emails is currently unavailable')
+                        return
+                      }
+
                       const result = addAdhocEmail(emailAddress, { switchToEmailTab: true })
 
                       if (result === 'added') {
@@ -612,7 +620,9 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
                               onKeyDown={(e) => handleKeyDown(e, globalIndex)}
                               onFocus={() => setActiveIndex(globalIndex)}
                               type="button"
-                              disabled={!emailAddress}
+                              disabled={
+                                typeof addAdhocEmail !== 'function' || !emailAddress
+                              }
                               data-active={activeIndex === globalIndex ? 'true' : undefined}
                             >
                               {emailAddress ? 'Add to Email List' : 'Email Unavailable'}

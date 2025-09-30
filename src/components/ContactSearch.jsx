@@ -18,6 +18,20 @@ const MIN_COLUMN_WIDTH = 320
 const MIN_LIST_HEIGHT = 320
 const LIST_BOTTOM_PADDING = 24
 const DEFAULT_ROW_HEIGHT = 340
+const DEFAULT_COLUMN_GAP = 24
+
+const parsePxValue = (value) => {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : 0
+  }
+
+  if (typeof value !== 'string') {
+    return 0
+  }
+
+  const parsed = parseFloat(value)
+  return Number.isFinite(parsed) ? parsed : 0
+}
 
 /**
  * Provide a searchable list of contacts with quick email adding.
@@ -42,6 +56,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
   const [columnCount, setColumnCount] = useState(1)
   const [listHeight, setListHeight] = useState(MIN_LIST_HEIGHT)
   const [listWidth, setListWidth] = useState(0)
+  const rowGapRef = useRef(DEFAULT_COLUMN_GAP)
 
   const getContactKey = useCallback((contact, index) => {
     return (
@@ -145,32 +160,61 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
     [filtered.length],
   )
 
+  const updateLayoutMetrics = useCallback(() => {
+    const container = containerRef.current
+    const header = headerRef.current
+
+    if (!container || !header) {
+      return
+    }
+
+    container.style.setProperty('--contact-header-height', `${header.offsetHeight}px`)
+
+    const rect = container.getBoundingClientRect()
+    const effectiveWidth = rect.width || container.clientWidth || window.innerWidth || 1024
+
+    if (effectiveWidth > 0) {
+      setListWidth((prev) => (Math.abs(prev - effectiveWidth) < 0.5 ? prev : effectiveWidth))
+    }
+
+    const gap = rowGapRef.current || 0
+    const nextColumnCount = Math.max(
+      1,
+      Math.floor((effectiveWidth + gap) / (MIN_COLUMN_WIDTH + gap)),
+    )
+    setColumnCount((prev) => (prev === nextColumnCount ? prev : nextColumnCount))
+
+    let bottomPadding = LIST_BOTTOM_PADDING
+    let bottomLimit = window.innerHeight
+
+    const moduleCard = container.closest('.module-card')
+    if (moduleCard) {
+      const moduleRect = moduleCard.getBoundingClientRect()
+      bottomLimit = Math.min(bottomLimit, moduleRect.bottom)
+
+      const moduleStyles = window.getComputedStyle(moduleCard)
+      const paddingBottom = parsePxValue(moduleStyles.paddingBottom)
+      const borderBottom = parsePxValue(moduleStyles.borderBottomWidth)
+      bottomPadding = Math.max(bottomPadding, paddingBottom + borderBottom)
+    }
+
+    const availableHeight = Math.max(
+      MIN_LIST_HEIGHT,
+      Math.floor(bottomLimit - rect.top - bottomPadding),
+    )
+
+    setListHeight((prev) => (Math.abs(prev - availableHeight) < 0.5 ? prev : availableHeight))
+  }, [])
+
   useLayoutEffect(() => {
     const container = containerRef.current
     const header = headerRef.current
     if (!container || !header) return
 
-    const updateMetrics = () => {
-      container.style.setProperty('--contact-header-height', `${header.offsetHeight}px`)
-
-      const rect = container.getBoundingClientRect()
-      const effectiveWidth = rect.width || container.clientWidth || window.innerWidth || 1024
-      setListWidth(effectiveWidth)
-
-      const nextColumnCount = Math.max(1, Math.floor(effectiveWidth / MIN_COLUMN_WIDTH))
-      setColumnCount(nextColumnCount)
-
-      const availableHeight = Math.max(
-        MIN_LIST_HEIGHT,
-        window.innerHeight - rect.top - LIST_BOTTOM_PADDING,
-      )
-      setListHeight(availableHeight)
-    }
-
-    updateMetrics()
+    updateLayoutMetrics()
 
     let resizeObserver
-    const resizeHandler = () => updateMetrics()
+    const resizeHandler = () => updateLayoutMetrics()
 
     if (typeof ResizeObserver !== 'undefined') {
       resizeObserver = new ResizeObserver(resizeHandler)
@@ -185,7 +229,11 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
       }
       window.removeEventListener('resize', resizeHandler)
     }
-  }, [])
+  }, [updateLayoutMetrics])
+
+  useEffect(() => {
+    updateLayoutMetrics()
+  }, [deferredQuery, updateLayoutMetrics])
 
   const rows = useMemo(() => {
     if (columnCount <= 1) {
@@ -198,6 +246,27 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
     }
     return chunked
   }, [filtered, columnCount])
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const firstRow = container.querySelector('.contact-list__row')
+    if (!firstRow) {
+      return
+    }
+
+    const styles = window.getComputedStyle(firstRow)
+    const columnGap =
+      parsePxValue(styles.columnGap) ||
+      parsePxValue(styles.gap) ||
+      parsePxValue(styles.gridColumnGap)
+
+    if (columnGap && Math.abs(columnGap - rowGapRef.current) > 0.5) {
+      rowGapRef.current = columnGap
+      updateLayoutMetrics()
+    }
+  }, [rows, updateLayoutMetrics])
 
   const getRowHeight = useCallback(
     (index) => sizeMapRef.current.get(index) ?? DEFAULT_ROW_HEIGHT,

@@ -373,6 +373,12 @@ body {
   gap: 1.5rem;
   --contact-header-height: 0px;
   --contact-list-offset: clamp(0.75rem, 1vw, 1.25rem);
+  --contact-grid-gap: clamp(1.25rem, 2vw, 1.9rem);
+}
+
+.contact-search {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .button-group {
@@ -1215,13 +1221,15 @@ a[href^="mailto:"]:hover {
   scroll-padding-top: calc(var(--contact-header-height) + var(--contact-list-offset));
   margin-top: 0;
   width: 100%;
+  max-width: 100%;
   border-radius: 18px;
+  overflow-x: hidden;
 }
 
 .contact-list__row {
   display: grid;
-  grid-template-columns: repeat(var(--contact-columns, 1), minmax(320px, 1fr));
-  gap: clamp(1.25rem, 2vw, 1.9rem);
+  grid-template-columns: repeat(var(--contact-columns, 1), minmax(0, 1fr));
+  gap: var(--contact-grid-gap);
   padding: clamp(0.35rem, 0.8vw, 0.75rem) 0 clamp(0.75rem, 1.4vw, 1.2rem);
   margin: 0;
   box-sizing: border-box;

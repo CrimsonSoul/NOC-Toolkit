@@ -8,11 +8,9 @@ import React, {
   useDeferredValue,
 } from 'react'
 import { toast } from 'react-hot-toast'
-import { findEmailAddress, getContactInitials } from '../utils/findEmailAddress'
-import { formatPhones } from '../utils/formatPhones'
-import { getPreferredPhoneValue } from '../utils/contactInfo'
 import { normalizeSearchText } from '../utils/normalizeText'
 import { notifyAdhocEmailResult } from '../utils/notifyAdhocEmailResult'
+import { buildIndexedContacts } from '../utils/contactIndex'
 
 /**
  * Manage selection of email groups and creation of merged mailing lists.
@@ -85,44 +83,10 @@ const EmailGroups = ({
     return groups.filter((group) => group._search.includes(term))
   }, [groups, deferredGroupQuery])
 
-  const indexedContacts = useMemo(() => {
-    if (!Array.isArray(contactData)) {
-      return []
-    }
-
-    return contactData.reduce((acc, contact, index) => {
-      if (!contact || typeof contact !== 'object') {
-        return acc
-      }
-
-      const phoneValue = getPreferredPhoneValue(contact)
-      const key =
-        contact?.Email ||
-        contact?.EmailAddress ||
-        contact?.['Email Address'] ||
-        contact?.email ||
-        contact?.['E-mail'] ||
-        contact?.Name ||
-        index
-
-      const searchText = Object.values(contact)
-        .map((value) => normalizeSearchText(value))
-        .filter(Boolean)
-        .join(' ')
-
-      acc.push({
-        raw: contact,
-        key,
-        email: findEmailAddress(contact),
-        initials: getContactInitials(contact?.Name),
-        phone: phoneValue,
-        formattedPhone: formatPhones(phoneValue),
-        searchText,
-      })
-
-      return acc
-    }, [])
-  }, [contactData])
+  const indexedContacts = useMemo(
+    () => buildIndexedContacts(contactData),
+    [contactData],
+  )
 
   const filteredContacts = useMemo(() => {
     const term = normalizeSearchText(deferredContactQuery)
@@ -141,14 +105,21 @@ const EmailGroups = ({
     return [...new Set([...all, ...adhocEmails])]
   }, [selectedGroups, groupMap, adhocEmails])
 
+  const removedEmailSet = useMemo(
+    () => new Set(removedEmails),
+    [removedEmails],
+  )
+
   const activeEmails = useMemo(
-    () => mergedEmails.filter((email) => !removedEmails.includes(email)),
-    [mergedEmails, removedEmails],
+    () => mergedEmails.filter((email) => !removedEmailSet.has(email)),
+    [mergedEmails, removedEmailSet],
   )
 
   const activeEmailSet = useMemo(() => {
     return new Set(activeEmails.map((email) => email.toLowerCase()))
   }, [activeEmails])
+
+  const adhocEmailSet = useMemo(() => new Set(adhocEmails), [adhocEmails])
 
   useEffect(() => {
     setRemovedEmails((prev) => {
@@ -255,14 +226,14 @@ const EmailGroups = ({
 
   const handleRemoveEmail = useCallback(
     (email) => {
-      if (adhocEmails.includes(email)) {
+      if (adhocEmailSet.has(email)) {
         setAdhocEmails((prev) => prev.filter((item) => item !== email))
         setRemovedManualEmails((prev) => (prev.includes(email) ? prev : [...prev, email]))
       } else {
         setRemovedEmails((prev) => (prev.includes(email) ? prev : [...prev, email]))
       }
     },
-    [adhocEmails, setAdhocEmails, setRemovedEmails, setRemovedManualEmails],
+    [adhocEmailSet, setAdhocEmails, setRemovedEmails, setRemovedManualEmails],
   )
 
   const restoreRemovedEmails = useCallback(() => {
@@ -296,10 +267,10 @@ const EmailGroups = ({
   useEffect(() => {
     setRemovedManualEmails((prev) => {
       if (!prev.length) return prev
-      const restored = prev.filter((email) => !adhocEmails.includes(email))
+      const restored = prev.filter((email) => !adhocEmailSet.has(email))
       return restored.length === prev.length ? prev : restored
     })
-  }, [adhocEmails])
+  }, [adhocEmailSet])
 
   useEffect(() => {
     if (!isContactPickerOpen) return

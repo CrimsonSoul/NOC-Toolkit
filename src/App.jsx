@@ -274,7 +274,7 @@ function App() {
   )
 
   return (
-    <div className="app-shell fade-in">
+    <div className={`app-shell fade-in${tab === 'radar' ? ' app-shell--radar' : ''}`}>
       <Toaster position="top-right" toastOptions={toastOptions} />
 
       <header className="app-header" ref={headerRef}>

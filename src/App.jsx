@@ -21,18 +21,21 @@ const formatRefreshTimestamp = (date) => refreshTimestampFormatter.format(date)
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const VALID_TABS = new Set(['email', 'contact', 'radar'])
 
-const ensureArray = (value) => (Array.isArray(value) ? value : [])
+const EMPTY_EMAIL_DATA = Object.freeze([])
+const EMPTY_CONTACT_DATA = Object.freeze([])
+
+const ensureArray = (value, fallback) => (Array.isArray(value) ? value : fallback)
 
 const sanitizeExcelPayload = (payload) => {
   if (!payload || typeof payload !== 'object') {
-    return { emailData: [], contactData: [] }
+    return { emailData: EMPTY_EMAIL_DATA, contactData: EMPTY_CONTACT_DATA }
   }
 
   const { emailData, contactData } = payload
 
   return {
-    emailData: ensureArray(emailData),
-    contactData: ensureArray(contactData),
+    emailData: ensureArray(emailData, EMPTY_EMAIL_DATA),
+    contactData: ensureArray(contactData, EMPTY_CONTACT_DATA),
   }
 }
 
@@ -53,8 +56,8 @@ const getStoredTabPreference = () => {
 function App() {
   const [selectedGroups, setSelectedGroups] = useState([])
   const [adhocEmails, setAdhocEmails] = useState([])
-  const [emailData, setEmailData] = useState([])
-  const [contactData, setContactData] = useState([])
+  const [emailData, setEmailData] = useState(EMPTY_EMAIL_DATA)
+  const [contactData, setContactData] = useState(EMPTY_CONTACT_DATA)
   const [lastRefresh, setLastRefresh] = useState('N/A')
   const [tab, setTabState] = useState(() => getStoredTabPreference() || 'email')
   const [radarMounted, setRadarMounted] = useState(tab === 'radar')
@@ -70,34 +73,40 @@ function App() {
     }
   }, [])
 
+  const updateExcelState = useCallback((payload, timestamp = new Date()) => {
+    const { emailData: nextEmailData, contactData: nextContactData } = sanitizeExcelPayload(payload)
+
+    setEmailData((prev) => (prev === nextEmailData ? prev : nextEmailData))
+    setContactData((prev) => (prev === nextContactData ? prev : nextContactData))
+    setLastRefresh(formatRefreshTimestamp(timestamp))
+  }, [])
+
+  const resetExcelState = useCallback(() => {
+    setEmailData((prev) => (prev === EMPTY_EMAIL_DATA ? prev : EMPTY_EMAIL_DATA))
+    setContactData((prev) => (prev === EMPTY_CONTACT_DATA ? prev : EMPTY_CONTACT_DATA))
+    setLastRefresh((prev) => (prev === 'N/A' ? prev : 'N/A'))
+  }, [])
+
   /** Load group and contact data from the preloaded Excel files. */
   const loadData = useCallback(async () => {
     if (!window.nocListAPI?.loadExcelData) {
       console.error('Excel bridge unavailable: unable to load data.')
       toast.error('Unable to load Excel data: desktop bridge unavailable.')
-      setEmailData([])
-      setContactData([])
-      setLastRefresh('N/A')
+      resetExcelState()
       return false
     }
 
     try {
-      const { emailData: nextEmailData, contactData: nextContactData } = sanitizeExcelPayload(
-        await window.nocListAPI.loadExcelData(),
-      )
-      setEmailData(nextEmailData)
-      setContactData(nextContactData)
-      setLastRefresh(formatRefreshTimestamp(new Date()))
+      const payload = await window.nocListAPI.loadExcelData()
+      updateExcelState(payload, new Date())
       return true
     } catch (error) {
       console.error('Failed to load Excel data:', error)
       toast.error('Unable to load Excel data. Please try again.')
-      setEmailData([])
-      setContactData([])
-      setLastRefresh('N/A')
+      resetExcelState()
       return false
     }
-  }, [])
+  }, [resetExcelState, updateExcelState])
 
   useEffect(() => {
     loadData()
@@ -110,14 +119,11 @@ function App() {
 
     const unsubscribe = window.nocListAPI.onExcelDataUpdate((data) => {
       toast.success('Excel files updated automatically!')
-      const { emailData: nextEmailData, contactData: nextContactData } = sanitizeExcelPayload(data)
-      setEmailData(nextEmailData)
-      setContactData(nextContactData)
-      setLastRefresh(formatRefreshTimestamp(new Date()))
+      updateExcelState(data, new Date())
     })
 
     return () => unsubscribe?.()
-  }, [])
+  }, [updateExcelState])
 
   useEffect(() => {
     if (!window.nocListAPI?.onExcelWatchError) {

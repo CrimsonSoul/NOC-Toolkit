@@ -43,36 +43,52 @@ const EmailGroups = ({
   const deferredContactQuery = useDeferredValue(contactQuery)
   const selectedGroupSet = useMemo(() => new Set(selectedGroups), [selectedGroups])
 
-  const groups = useMemo(() => {
+  const { groups, groupMap } = useMemo(() => {
     if (!Array.isArray(emailData) || emailData.length === 0) {
-      return []
+      return { groups: [], groupMap: new Map() }
     }
 
     const [headers = [], ...rows] = emailData
 
     if (!Array.isArray(headers) || headers.length === 0) {
-      return []
+      return { groups: [], groupMap: new Map() }
     }
 
-    return headers.reduce((acc, header, columnIndex) => {
+    const nextGroups = []
+    const nextGroupMap = new Map()
+
+    headers.forEach((header, columnIndex) => {
       const label = header == null ? '' : String(header).trim()
       if (!label) {
-        return acc
+        return
       }
 
-      const emails = rows
-        .map((row) => (Array.isArray(row) ? row[columnIndex] : undefined))
-        .filter((value) => typeof value === 'string' && value.trim().length > 0)
-        .map((value) => value.trim())
+      const emails = []
+      for (const row of rows) {
+        if (!Array.isArray(row)) {
+          continue
+        }
 
-      acc.push({
+        const cell = row[columnIndex]
+        if (typeof cell !== 'string') {
+          continue
+        }
+
+        const trimmed = cell.trim()
+        if (trimmed) {
+          emails.push(trimmed)
+        }
+      }
+
+      nextGroups.push({
         name: label,
         emails,
         _search: normalizeSearchText(label),
       })
+      nextGroupMap.set(label, emails)
+    })
 
-      return acc
-    }, [])
+    return { groups: nextGroups, groupMap: nextGroupMap }
   }, [emailData])
 
   const filteredGroups = useMemo(() => {
@@ -98,11 +114,6 @@ const EmailGroups = ({
       ? indexedContacts.filter((contact) => contact.searchText.includes(contactSearchTerm))
       : indexedContacts
   }, [contactSearchTerm, indexedContacts])
-
-  const groupMap = useMemo(
-    () => new Map(groups.map((g) => [g.name, g.emails])),
-    [groups],
-  )
 
   const mergedEmails = useMemo(() => {
     const all = selectedGroups.flatMap((name) => groupMap.get(name) || [])

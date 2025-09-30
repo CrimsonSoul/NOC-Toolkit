@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createRequire } from 'module'
+import path from 'path'
 
 const require = createRequire(import.meta.url)
 const menuStub = {
@@ -18,10 +19,14 @@ require.cache[require.resolve('electron')] = { exports: electronStub }
 
 const main = require('./main')
 
+const groupsPath = path.join(__dirname, 'groups.xlsx')
+const contactsPath = path.join(__dirname, 'contacts.xlsx')
+
 let handlerMap
 let fakeWatcher
 
 beforeEach(() => {
+  vi.restoreAllMocks()
   handlerMap = {}
   fakeWatcher = {
     on: (event, handler) => {
@@ -30,37 +35,42 @@ beforeEach(() => {
     close: vi.fn(),
   }
   vi.useFakeTimers()
+  main.__setCachedData({ emailData: [], contactData: [] })
 })
 
 describe('watchExcelFiles', () => {
   it('debounces change events', async () => {
+    vi.useRealTimers()
     const sendSpy = vi.fn()
     main.__setWin({ webContents: { send: sendSpy } })
 
     const cleanup = main.watchExcelFiles(fakeWatcher)
-    handlerMap.change('file1')
-    handlerMap.change('file2')
-    handlerMap.change('file3')
+    handlerMap.change(groupsPath)
+    handlerMap.change(contactsPath)
+    handlerMap.change(groupsPath)
 
-    await vi.advanceTimersByTimeAsync(300)
+    await new Promise((resolve) => setTimeout(resolve, 400))
 
     expect(sendSpy).toHaveBeenCalledTimes(1)
     cleanup()
+    vi.useFakeTimers()
   })
 
   it('debounces unlink events', async () => {
+    vi.useRealTimers()
     const sendSpy = vi.fn()
     main.__setWin({ webContents: { send: sendSpy } })
 
     const cleanup = main.watchExcelFiles(fakeWatcher)
-    handlerMap.unlink('file1')
-    handlerMap.unlink('file2')
-    handlerMap.unlink('file3')
+    handlerMap.unlink(groupsPath)
+    handlerMap.unlink(contactsPath)
+    handlerMap.unlink(groupsPath)
 
-    await vi.advanceTimersByTimeAsync(300)
+    await new Promise((resolve) => setTimeout(resolve, 400))
 
     expect(sendSpy).toHaveBeenCalledTimes(1)
     cleanup()
+    vi.useFakeTimers()
   })
 
   it('returns a cleanup function that closes the watcher', () => {
@@ -82,6 +92,49 @@ describe('watchExcelFiles', () => {
     const cleanup = main.watchExcelFiles(fakeWatcher)
     handlerMap.error(new Error('fail'))
     expect(fakeWatcher.close).toHaveBeenCalled()
+    cleanup()
+  })
+
+  it('clears only cached email data when the groups file is deleted', async () => {
+    const sendSpy = vi.fn()
+    main.__setWin({ webContents: { send: sendSpy } })
+    await main.loadExcelFiles()
+
+    const initialContactData = main.getCachedData().contactData
+    expect(initialContactData.length).toBeGreaterThan(0)
+
+    const cleanup = main.watchExcelFiles(fakeWatcher)
+
+    handlerMap.unlink(groupsPath)
+    await vi.advanceTimersByTimeAsync(300)
+    await Promise.resolve()
+
+    expect(main.getCachedData()).toEqual({ emailData: [], contactData: initialContactData })
+    expect(sendSpy).toHaveBeenCalledWith('excel-data-updated', {
+      emailData: [],
+      contactData: initialContactData,
+    })
+
+    cleanup()
+  })
+
+  it('clears only cached contact data when the contacts file is deleted', async () => {
+    const sendSpy = vi.fn()
+    main.__setWin({ webContents: { send: sendSpy } })
+    main.__setCachedData({ emailData: ['cached-email'], contactData: ['cached-contact'] })
+
+    const cleanup = main.watchExcelFiles(fakeWatcher)
+
+    handlerMap.unlink(contactsPath)
+    await vi.advanceTimersByTimeAsync(300)
+    await Promise.resolve()
+
+    expect(main.getCachedData()).toEqual({ emailData: ['cached-email'], contactData: [] })
+    expect(sendSpy).toHaveBeenCalledWith('excel-data-updated', {
+      emailData: ['cached-email'],
+      contactData: [],
+    })
+
     cleanup()
   })
 })

@@ -19,6 +19,7 @@ const refreshTimestampFormatter = new Intl.DateTimeFormat(undefined, {
 const formatRefreshTimestamp = (date) => refreshTimestampFormatter.format(date)
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const VALID_TABS = new Set(['email', 'contact', 'radar'])
 
 const getStoredTabPreference = () => {
   if (typeof window === 'undefined' || !window.localStorage) {
@@ -26,7 +27,8 @@ const getStoredTabPreference = () => {
   }
 
   try {
-    return window.localStorage.getItem('activeTab')
+    const stored = window.localStorage.getItem('activeTab')
+    return VALID_TABS.has(stored) ? stored : null
   } catch (error) {
     console.warn('Unable to read active tab preference:', error)
     return null
@@ -39,13 +41,19 @@ function App() {
   const [emailData, setEmailData] = useState([])
   const [contactData, setContactData] = useState([])
   const [lastRefresh, setLastRefresh] = useState('N/A')
-  const [tab, setTab] = useState(() => getStoredTabPreference() || 'email')
+  const [tab, setTabState] = useState(() => getStoredTabPreference() || 'email')
   const [radarMounted, setRadarMounted] = useState(tab === 'radar')
   const { currentCode, previousCode, progressKey, intervalMs } = useRotatingCode()
   const headerRef = useRef(null)
   const [authChallenge, setAuthChallenge] = useState(null)
   const [authSubmitting, setAuthSubmitting] = useState(false)
   const lastAuthUsername = useRef('')
+
+  const setTab = useCallback((nextTab) => {
+    if (VALID_TABS.has(nextTab)) {
+      setTabState(nextTab)
+    }
+  }, [])
 
   /** Load group and contact data from the preloaded Excel files. */
   const loadData = useCallback(async () => {
@@ -196,6 +204,10 @@ function App() {
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.localStorage) {
+      return
+    }
+
+    if (!VALID_TABS.has(tab)) {
       return
     }
 

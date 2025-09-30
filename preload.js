@@ -21,6 +21,10 @@ contextBridge.exposeInMainWorld('nocListAPI', {
    * @param {(data: {emailData: any[], contactData: any[]}) => void} callback
    */
   onExcelDataUpdate: (callback) => {
+    if (typeof callback !== 'function') {
+      return () => {}
+    }
+
     const handler = (_event, data) => callback(data)
     ipcRenderer.on('excel-data-updated', handler)
     return () => ipcRenderer.off('excel-data-updated', handler)
@@ -31,6 +35,10 @@ contextBridge.exposeInMainWorld('nocListAPI', {
    * @param {(message: string) => void} callback
    */
   onExcelWatchError: (callback) => {
+    if (typeof callback !== 'function') {
+      return () => {}
+    }
+
     const handler = (_event, message) => callback(message)
     ipcRenderer.on('excel-watch-error', handler)
     return () => ipcRenderer.off('excel-watch-error', handler)
@@ -77,6 +85,10 @@ contextBridge.exposeInMainWorld('nocListAPI', {
    * @param {(result: {status: 'success' | 'error', message?: string}) => void} callback
    */
   onRadarCacheCleared: (callback) => {
+    if (typeof callback !== 'function') {
+      return () => {}
+    }
+
     const channel = 'radar-cache-cleared'
     const handler = (_event, payload) => callback(payload)
     ipcRenderer.on(channel, handler)

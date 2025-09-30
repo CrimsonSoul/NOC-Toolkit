@@ -49,6 +49,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
   const listRef = useRef(null)
   const itemRefs = useRef(new Map())
   const sizeMapRef = useRef(new Map())
+  const rowsRef = useRef([])
   const rowObserversRef = useRef(new Map())
   const pendingResetIndexRef = useRef(null)
   const scheduledResetRef = useRef(null)
@@ -57,6 +58,8 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
   const [listHeight, setListHeight] = useState(MIN_LIST_HEIGHT)
   const [listWidth, setListWidth] = useState(0)
   const rowGapRef = useRef(DEFAULT_COLUMN_GAP)
+  const availableHeightRef = useRef(MIN_LIST_HEIGHT)
+  const totalMeasuredHeightRef = useRef(0)
 
   const getContactKey = useCallback((contact, index) => {
     return (
@@ -128,14 +131,6 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
     }
   }, [activeIndex, columnCount])
 
-  useEffect(() => {
-    itemRefs.current = new Map()
-    sizeMapRef.current = new Map()
-    rowObserversRef.current.forEach((observer) => observer.disconnect())
-    rowObserversRef.current.clear()
-    listRef.current?.resetAfterIndex?.(0, true)
-  }, [filtered, columnCount])
-
   const handleKeyDown = useCallback(
     (e, index) => {
       if (e.key === 'ArrowDown') {
@@ -159,6 +154,32 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
     },
     [filtered.length],
   )
+
+  const applyListHeight = useCallback((height) => {
+    const available = availableHeightRef.current || MIN_LIST_HEIGHT
+    const clamped = Math.max(
+      MIN_LIST_HEIGHT,
+      Math.min(available, height),
+    )
+
+    setListHeight((prev) => (Math.abs(prev - clamped) < 0.5 ? prev : clamped))
+  }, [])
+
+  const updateListHeightEstimate = useCallback(() => {
+    const rowCount = rowsRef.current.length
+
+    if (rowCount === 0) {
+      applyListHeight(MIN_LIST_HEIGHT)
+      return
+    }
+
+    const measuredTotal = totalMeasuredHeightRef.current || 0
+    const measuredCount = sizeMapRef.current.size
+    const remainingCount = Math.max(0, rowCount - measuredCount)
+    const estimatedTotal = measuredTotal + remainingCount * DEFAULT_ROW_HEIGHT
+
+    applyListHeight(estimatedTotal)
+  }, [applyListHeight])
 
   const updateLayoutMetrics = useCallback(() => {
     const container = containerRef.current
@@ -203,8 +224,9 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
       Math.floor(bottomLimit - rect.top - bottomPadding),
     )
 
-    setListHeight((prev) => (Math.abs(prev - availableHeight) < 0.5 ? prev : availableHeight))
-  }, [])
+    availableHeightRef.current = availableHeight
+    updateListHeightEstimate()
+  }, [updateListHeightEstimate])
 
   useLayoutEffect(() => {
     const container = containerRef.current
@@ -235,6 +257,16 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
     updateLayoutMetrics()
   }, [deferredQuery, updateLayoutMetrics])
 
+  useEffect(() => {
+    itemRefs.current = new Map()
+    sizeMapRef.current = new Map()
+    totalMeasuredHeightRef.current = 0
+    rowObserversRef.current.forEach((observer) => observer.disconnect())
+    rowObserversRef.current.clear()
+    listRef.current?.resetAfterIndex?.(0, true)
+    updateListHeightEstimate()
+  }, [filtered, columnCount, updateListHeightEstimate])
+
   const rows = useMemo(() => {
     if (columnCount <= 1) {
       return filtered.map((contact) => [contact])
@@ -246,6 +278,11 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
     }
     return chunked
   }, [filtered, columnCount])
+
+  useEffect(() => {
+    rowsRef.current = rows
+    updateListHeightEstimate()
+  }, [rows, updateListHeightEstimate])
 
   useEffect(() => {
     const container = containerRef.current
@@ -331,10 +368,16 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
       const current = sizeMapRef.current.get(index)
       if (current !== size) {
         sizeMapRef.current.set(index, size)
+        if (typeof current === 'number') {
+          totalMeasuredHeightRef.current += size - current
+        } else {
+          totalMeasuredHeightRef.current += size
+        }
         scheduleResetAfterIndex(index)
+        updateListHeightEstimate()
       }
     },
-    [scheduleResetAfterIndex],
+    [scheduleResetAfterIndex, updateListHeightEstimate],
   )
 
   useEffect(() => () => {

@@ -63,6 +63,42 @@ const getExcelPaths = () => ({
   contactsPath: path.join(basePath, 'contacts.xlsx'),
 })
 
+const readWorkbookData = async ({
+  filePath,
+  sheetToJsonOptions,
+  fallback,
+  missingLogMessage,
+  errorLogMessage,
+}) => {
+  if (!fs.existsSync(filePath)) {
+    if (missingLogMessage) {
+      console.warn(missingLogMessage)
+    }
+    return fallback
+  }
+
+  try {
+    const buffer = await fs.promises.readFile(filePath)
+    const workbook = xlsx.read(buffer, { type: 'buffer' })
+    const [sheetName] = workbook.SheetNames || []
+
+    if (sheetName && workbook.Sheets[sheetName]) {
+      const sheet = workbook.Sheets[sheetName]
+      const parsed = xlsx.utils.sheet_to_json(sheet, sheetToJsonOptions)
+      return Array.isArray(parsed) ? parsed : []
+    }
+
+    return []
+  } catch (error) {
+    if (errorLogMessage) {
+      console.error(errorLogMessage, error)
+    } else {
+      console.error(error)
+    }
+    return []
+  }
+}
+
 /**
  * Read Excel sheets and cache the parsed data for quick access.
  *
@@ -76,48 +112,37 @@ async function loadExcelFiles(changedFilePath) {
   let nextEmailData = cachedData.emailData
   let nextContactData = cachedData.contactData
 
-  if (!changedFilePath || changedFilePath === groupsPath) {
-    if (fs.existsSync(groupsPath)) {
-      try {
-        const groupBuffer = await fs.promises.readFile(groupsPath)
-        const groupWorkbook = xlsx.read(groupBuffer, { type: 'buffer' })
-        const [sheetName] = groupWorkbook.SheetNames || []
+  const tasks = []
 
-        if (sheetName && groupWorkbook.Sheets[sheetName]) {
-          const groupSheet = groupWorkbook.Sheets[sheetName]
-          const parsed = xlsx.utils.sheet_to_json(groupSheet, { header: 1 })
-          nextEmailData = Array.isArray(parsed) ? parsed : []
-        } else {
-          nextEmailData = []
-        }
-      } catch (err) {
-        console.error('Error reading groups file:', err)
-      }
-    } else {
-      console.warn('groups.xlsx not found; using cached group data')
-    }
+  if (!changedFilePath || changedFilePath === groupsPath) {
+    tasks.push(
+      readWorkbookData({
+        filePath: groupsPath,
+        sheetToJsonOptions: { header: 1 },
+        fallback: nextEmailData,
+        missingLogMessage: 'groups.xlsx not found; using cached group data',
+        errorLogMessage: 'Error reading groups file:',
+      }).then((data) => {
+        nextEmailData = data
+      }),
+    )
   }
 
   if (!changedFilePath || changedFilePath === contactsPath) {
-    if (fs.existsSync(contactsPath)) {
-      try {
-        const contactBuffer = await fs.promises.readFile(contactsPath)
-        const contactWorkbook = xlsx.read(contactBuffer, { type: 'buffer' })
-        const [sheetName] = contactWorkbook.SheetNames || []
+    tasks.push(
+      readWorkbookData({
+        filePath: contactsPath,
+        fallback: nextContactData,
+        missingLogMessage: 'contacts.xlsx not found; using cached contact data',
+        errorLogMessage: 'Error reading contacts file:',
+      }).then((data) => {
+        nextContactData = data
+      }),
+    )
+  }
 
-        if (sheetName && contactWorkbook.Sheets[sheetName]) {
-          const contactSheet = contactWorkbook.Sheets[sheetName]
-          const parsed = xlsx.utils.sheet_to_json(contactSheet)
-          nextContactData = Array.isArray(parsed) ? parsed : []
-        } else {
-          nextContactData = []
-        }
-      } catch (err) {
-        console.error('Error reading contacts file:', err)
-      }
-    } else {
-      console.warn('contacts.xlsx not found; using cached contact data')
-    }
+  if (tasks.length > 0) {
+    await Promise.all(tasks)
   }
 
   cachedData = {
@@ -130,10 +155,25 @@ async function loadExcelFiles(changedFilePath) {
  * Send the latest cached Excel data to the renderer.
  */
 function sendExcelUpdate() {
-  if (!win || !win.webContents) {
+  if (!win) {
     return
   }
-  win.webContents.send('excel-data-updated', cachedData)
+
+  if (typeof win.isDestroyed === 'function' && win.isDestroyed()) {
+    return
+  }
+
+  const contents = win.webContents
+
+  if (!contents) {
+    return
+  }
+
+  if (typeof contents.isDestroyed === 'function' && contents.isDestroyed()) {
+    return
+  }
+
+  contents.send('excel-data-updated', cachedData)
 }
 
 /**
@@ -160,10 +200,15 @@ function watchExcelFiles(testWatcher) {
     }
   }
 
-  const debouncedOnChange = debounce(async (filePath) => {
+  const debouncedOnChange = debounce((filePath) => {
     console.log(`File changed: ${filePath}`)
-    await loadExcelFiles(filePath)
-    sendExcelUpdate()
+    loadExcelFiles(filePath)
+      .then(() => {
+        sendExcelUpdate()
+      })
+      .catch((error) => {
+        console.error('Failed to reload Excel data after change:', error)
+      })
   }, DEBOUNCE_DELAY)
 
   const debouncedOnUnlink = debounce((filePath) => {
@@ -240,6 +285,10 @@ function createWindow() {
   }
 
   win = new BrowserWindow(windowOptions)
+
+  win.on('closed', () => {
+    win = null
+  })
 
   if (app.isPackaged) {
     win.loadFile(path.join(__dirname, 'dist', 'index.html'))

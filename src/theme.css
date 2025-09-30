@@ -1234,6 +1234,7 @@ a[href^="mailto:"]:hover {
   max-width: 100%;
   border-radius: 18px;
   overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 .contact-list__row {

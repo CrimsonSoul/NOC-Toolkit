@@ -35,7 +35,8 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
   const listRef = useRef(null)
   const itemRefs = useRef(new Map())
   const sizeMapRef = useRef(new Map())
-  const resizeObserversRef = useRef(new Map())
+  const pendingResetIndexRef = useRef(null)
+  const scheduledResetRef = useRef(null)
   const [activeIndex, setActiveIndex] = useState(-1)
   const [columnCount, setColumnCount] = useState(1)
   const [listHeight, setListHeight] = useState(MIN_LIST_HEIGHT)
@@ -114,8 +115,6 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
   useEffect(() => {
     itemRefs.current = new Map()
     sizeMapRef.current = new Map()
-    resizeObserversRef.current.forEach((observer) => observer.disconnect())
-    resizeObserversRef.current = new Map()
     listRef.current?.resetAfterIndex?.(0, true)
   }, [filtered, columnCount])
 
@@ -202,22 +201,73 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
     [],
   )
 
-  const setRowHeight = useCallback((index, size) => {
-    const current = sizeMapRef.current.get(index)
-    if (current !== size) {
-      sizeMapRef.current.set(index, size)
-      listRef.current?.resetAfterIndex?.(index)
+  const cancelScheduledReset = useCallback(() => {
+    const scheduled = scheduledResetRef.current
+    if (!scheduled) {
+      return
+    }
+
+    scheduledResetRef.current = null
+
+    if (scheduled.type === 'raf') {
+      if (typeof cancelAnimationFrame === 'function') {
+        cancelAnimationFrame(scheduled.id)
+      }
+    } else {
+      clearTimeout(scheduled.id)
     }
   }, [])
 
+  const scheduleResetAfterIndex = useCallback((index) => {
+    const list = listRef.current
+    if (!list?.resetAfterIndex) {
+      return
+    }
+
+    const pending = pendingResetIndexRef.current
+    if (pending == null || index < pending) {
+      pendingResetIndexRef.current = index
+    }
+
+    if (scheduledResetRef.current) {
+      return
+    }
+
+    const flush = () => {
+      scheduledResetRef.current = null
+      const nextIndex = pendingResetIndexRef.current
+      pendingResetIndexRef.current = null
+
+      if (nextIndex != null) {
+        list.resetAfterIndex(nextIndex)
+      }
+    }
+
+    if (typeof requestAnimationFrame === 'function') {
+      const id = requestAnimationFrame(flush)
+      scheduledResetRef.current = { type: 'raf', id }
+    } else {
+      const id = setTimeout(flush, 0)
+      scheduledResetRef.current = { type: 'timeout', id }
+    }
+  }, [])
+
+  useEffect(() => cancelScheduledReset, [cancelScheduledReset])
+
+  const setRowHeight = useCallback(
+    (index, size) => {
+      const current = sizeMapRef.current.get(index)
+      if (current !== size) {
+        sizeMapRef.current.set(index, size)
+        scheduleResetAfterIndex(index)
+      }
+    },
+    [scheduleResetAfterIndex],
+  )
+
   const registerRow = useCallback(
     (index, node) => {
-      const observers = resizeObserversRef.current
-      const previousObserver = observers.get(index)
-      previousObserver?.disconnect()
-
       if (!node) {
-        observers.delete(index)
         return
       }
 
@@ -235,13 +285,9 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
       measure()
 
       if (typeof requestAnimationFrame === 'function') {
-        requestAnimationFrame(() => measure())
-      }
-
-      if (typeof ResizeObserver !== 'undefined') {
-        const observer = new ResizeObserver(() => measure())
-        observer.observe(node)
-        observers.set(index, observer)
+        requestAnimationFrame(measure)
+      } else {
+        setTimeout(measure, 0)
       }
     },
     [setRowHeight],

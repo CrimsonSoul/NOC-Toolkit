@@ -88,12 +88,16 @@ const EmailGroups = ({
     [contactData],
   )
 
+  const contactSearchTerm = useMemo(
+    () => normalizeSearchText(deferredContactQuery),
+    [deferredContactQuery],
+  )
+
   const filteredContacts = useMemo(() => {
-    const term = normalizeSearchText(deferredContactQuery)
-    return term
-      ? indexedContacts.filter((contact) => contact.searchText.includes(term))
+    return contactSearchTerm
+      ? indexedContacts.filter((contact) => contact.searchText.includes(contactSearchTerm))
       : indexedContacts
-  }, [deferredContactQuery, indexedContacts])
+  }, [contactSearchTerm, indexedContacts])
 
   const groupMap = useMemo(
     () => new Map(groups.map((g) => [g.name, g.emails])),
@@ -523,17 +527,11 @@ const EmailGroups = ({
                 <div className="empty-state">No contacts match your search.</div>
               )}
             </div>
-            {indexedContacts.length > filteredContacts.length && (
-              <p className="small-muted m-0">
-                Showing the first {filteredContacts.length.toLocaleString()} contacts. Use search to
-                find others.
-              </p>
-            )}
-            {contactQuery && filteredContacts.length > 0 && indexedContacts.length === filteredContacts.length && (
+            {contactSearchTerm && filteredContacts.length > 0 ? (
               <p className="small-muted m-0">
                 Found {filteredContacts.length.toLocaleString()} matching contacts.
               </p>
-            )}
+            ) : null}
           </div>
         </div>
       )}

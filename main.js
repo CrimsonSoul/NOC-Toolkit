@@ -51,6 +51,22 @@ const DEBOUNCE_DELAY = 250
 const pendingAuthRequests = new Map()
 let authRequestIdCounter = 0
 
+const isDestroyed = (entity) =>
+  Boolean(entity && typeof entity.isDestroyed === 'function' && entity.isDestroyed())
+
+const getActiveWebContents = () => {
+  if (!win || isDestroyed(win)) {
+    return null
+  }
+
+  const contents = win.webContents
+  if (!contents || isDestroyed(contents)) {
+    return null
+  }
+
+  return contents
+}
+
 /**
  * Simple debounce helper to limit how often a function can run.
  */
@@ -192,21 +208,8 @@ async function loadExcelFiles(changedFilePath) {
  * Send the latest cached Excel data to the renderer.
  */
 function sendExcelUpdate() {
-  if (!win) {
-    return
-  }
-
-  if (typeof win.isDestroyed === 'function' && win.isDestroyed()) {
-    return
-  }
-
-  const contents = win.webContents
-
+  const contents = getActiveWebContents()
   if (!contents) {
-    return
-  }
-
-  if (typeof contents.isDestroyed === 'function' && contents.isDestroyed()) {
     return
   }
 
@@ -281,8 +284,9 @@ function watchExcelFiles(testWatcher) {
 
   const onError = (error) => {
     console.error('Watcher error:', error)
-    if (win?.webContents) {
-      win.webContents.send('excel-watch-error', error.message || String(error))
+    const contents = getActiveWebContents()
+    if (contents) {
+      contents.send('excel-watch-error', error.message || String(error))
     }
     // Ensure we don't leave dangling listeners if an error occurs
     cleanup()
@@ -370,14 +374,20 @@ function cleanupAuthRequestsForContents(contentsId) {
 }
 
 function handleRadarCacheRefresh() {
-  if (!win || win.isDestroyed()) {
+  const contents = getActiveWebContents()
+  if (!contents) {
     return
   }
 
-  const { webContents } = win
+  const { session } = contents
 
-  const clearCachePromise = webContents.session.clearCache()
-  const clearStoragePromise = webContents.session
+  if (!session) {
+    console.warn('Unable to clear radar cache: no active session found')
+    return
+  }
+
+  const clearCachePromise = session.clearCache()
+  const clearStoragePromise = session
     .clearStorageData({
       origin: 'https://cw-intra-web',
       storages: ['appcache', 'serviceworkers', 'caches'],
@@ -386,11 +396,11 @@ function handleRadarCacheRefresh() {
 
   Promise.all([clearCachePromise, clearStoragePromise])
     .then(() => {
-      webContents.send('radar-cache-cleared', { status: 'success' })
+      contents.send('radar-cache-cleared', { status: 'success' })
     })
     .catch((error) => {
       console.error('Failed to clear radar cache:', error)
-      webContents.send('radar-cache-cleared', {
+      contents.send('radar-cache-cleared', {
         status: 'error',
         message: error?.message || String(error),
       })

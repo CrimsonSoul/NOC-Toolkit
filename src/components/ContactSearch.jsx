@@ -69,10 +69,18 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
     [contactData],
   )
 
+  const normalizedQuery = useMemo(
+    () => normalizeSearchText(deferredQuery),
+    [deferredQuery],
+  )
+
   const filtered = useMemo(() => {
-    const q = normalizeSearchText(deferredQuery)
-    return q ? indexedContacts.filter((contact) => contact.searchText.includes(q)) : indexedContacts
-  }, [deferredQuery, indexedContacts])
+    return normalizedQuery
+      ? indexedContacts.filter((contact) => contact.searchText.includes(normalizedQuery))
+      : indexedContacts
+  }, [indexedContacts, normalizedQuery])
+
+  const isSearching = Boolean(normalizedQuery)
 
   useEffect(() => {
     if (activeIndex >= filtered.length) {
@@ -246,7 +254,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
 
   useEffect(() => {
     updateLayoutMetrics()
-  }, [deferredQuery, updateLayoutMetrics])
+  }, [normalizedQuery, filtered.length, updateLayoutMetrics])
 
   useEffect(() => {
     itemRefs.current = new Map()
@@ -497,99 +505,105 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
       </div>
 
       <div className="contact-search__surface list-surface minimal-scrollbar" ref={listSurfaceRef}>
-        {filtered.length > 0 && listWidth > 0 ? (
-          <VariableSizeList
-            ref={listRef}
-            height={listHeight}
-            width={listWidth}
-            itemCount={rows.length}
-            itemSize={getRowHeight}
-            outerElementType={ContactListOuter}
-          >
-            {({ index, style }) => {
-              const row = rows[index]
-              return (
-                <div
-                  style={{
-                    ...style,
-                    width: '100%',
-                    maxWidth: '100%',
-                    '--contact-columns': columnCount,
-                  }}
-                  className="contact-list__row"
-                  ref={(node) => registerRow(index, node)}
-                  data-row-index={index}
-                >
-                  {row.map((contact, columnIndex) => {
-                    const globalIndex = index * columnCount + columnIndex
-                    const { raw, email, initials, formattedPhone, key } = contact
-                    const displayName = raw?.Name || email || 'Unknown'
+        {filtered.length > 0 ? (
+          listWidth > 0 ? (
+            <VariableSizeList
+              ref={listRef}
+              height={listHeight}
+              width={listWidth}
+              itemCount={rows.length}
+              itemSize={getRowHeight}
+              outerElementType={ContactListOuter}
+            >
+              {({ index, style }) => {
+                const row = rows[index]
+                return (
+                  <div
+                    style={{
+                      ...style,
+                      width: '100%',
+                      maxWidth: '100%',
+                      '--contact-columns': columnCount,
+                    }}
+                    className="contact-list__row"
+                    ref={(node) => registerRow(index, node)}
+                    data-row-index={index}
+                  >
+                    {row.map((contact, columnIndex) => {
+                      const globalIndex = index * columnCount + columnIndex
+                      const { raw, email, initials, formattedPhone, key } = contact
+                      const displayName = raw?.Name || email || 'Unknown'
 
-                    const handleAddToList = () => {
-                      if (!email) {
-                        toast.error('No email address available for this contact')
-                        return
+                      const handleAddToList = () => {
+                        if (!email) {
+                          toast.error('No email address available for this contact')
+                          return
+                        }
+
+                        if (typeof addAdhocEmail !== 'function') {
+                          toast.error('Adding emails is currently unavailable')
+                          return
+                        }
+
+                        const result = addAdhocEmail(email, { switchToEmailTab: true })
+                        notifyAdhocEmailResult(email, result)
                       }
 
-                      if (typeof addAdhocEmail !== 'function') {
-                        toast.error('Adding emails is currently unavailable')
-                        return
-                      }
-
-                      const result = addAdhocEmail(email, { switchToEmailTab: true })
-                      notifyAdhocEmailResult(email, result)
-                    }
-
-                    return (
-                      <div className="contact-card-wrapper" key={key}>
-                        <article className="contact-card" role="listitem">
-                          <div className="contact-card__header">
-                            <div className="contact-card__avatar">{initials}</div>
-                            <div>
-                              <h3 className="contact-card__name">{displayName}</h3>
-                              {raw?.Title && <p className="contact-card__title">{raw.Title}</p>}
+                      return (
+                        <div className="contact-card-wrapper" key={key}>
+                          <article className="contact-card" role="listitem">
+                            <div className="contact-card__header">
+                              <div className="contact-card__avatar">{initials}</div>
+                              <div>
+                                <h3 className="contact-card__name">{displayName}</h3>
+                                {raw?.Title && <p className="contact-card__title">{raw.Title}</p>}
+                              </div>
                             </div>
-                          </div>
 
-                          <div className="contact-card__row">
-                            <span className="label">Email</span>
-                            {email ? (
-                              <a href={`mailto:${email}`} style={{ whiteSpace: 'nowrap' }}>
-                                {email}
-                              </a>
-                            ) : (
-                              <span>N/A</span>
-                            )}
-                          </div>
-                          <div className="contact-card__row">
-                            <span className="label">Phone</span>
-                            <span>{formattedPhone || 'N/A'}</span>
-                          </div>
+                            <div className="contact-card__row">
+                              <span className="label">Email</span>
+                              {email ? (
+                                <a href={`mailto:${email}`} style={{ whiteSpace: 'nowrap' }}>
+                                  {email}
+                                </a>
+                              ) : (
+                                <span>N/A</span>
+                              )}
+                            </div>
+                            <div className="contact-card__row">
+                              <span className="label">Phone</span>
+                              <span>{formattedPhone || 'N/A'}</span>
+                            </div>
 
-                          <div className="contact-card__actions">
-                            <button
-                              ref={(node) => setItemRef(globalIndex, node)}
-                              onClick={handleAddToList}
-                              className="btn btn-outline btn-small"
-                              onKeyDown={(e) => handleKeyDown(e, globalIndex)}
-                              onFocus={() => setActiveIndex(globalIndex)}
-                              type="button"
-                              disabled={typeof addAdhocEmail !== 'function' || !email}
-                              data-active={activeIndex === globalIndex ? 'true' : undefined}
-                            >
-                              {email ? 'Add to Email List' : 'Email Unavailable'}
-                            </button>
-                          </div>
-                        </article>
-                      </div>
-                    )
-                  })}
-                </div>
-              )
-            }}
-          </VariableSizeList>
+                            <div className="contact-card__actions">
+                              <button
+                                ref={(node) => setItemRef(globalIndex, node)}
+                                onClick={handleAddToList}
+                                className="btn btn-outline btn-small"
+                                onKeyDown={(e) => handleKeyDown(e, globalIndex)}
+                                onFocus={() => setActiveIndex(globalIndex)}
+                                type="button"
+                                disabled={typeof addAdhocEmail !== 'function' || !email}
+                                data-active={activeIndex === globalIndex ? 'true' : undefined}
+                              >
+                                {email ? 'Add to Email List' : 'Email Unavailable'}
+                              </button>
+                            </div>
+                          </article>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              }}
+            </VariableSizeList>
+          ) : (
+            <div className="empty-state">Preparing list…</div>
+          )
         ) : (
-          <div className="empty-state">No matching contacts.</div>
+          <div className="empty-state">
+            {isSearching ? 'No contacts match your search.' : 'No contacts available.'}
+          </div>
         )}
       </div>
     </div>

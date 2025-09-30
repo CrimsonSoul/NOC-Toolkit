@@ -143,7 +143,7 @@ const EmailGroups = ({
     setAdhocEmails([])
     setRemovedEmails([])
     setRemovedManualEmails([])
-  }, [setSelectedGroups, setAdhocEmails, setRemovedManualEmails])
+  }, [setSelectedGroups, setAdhocEmails, setRemovedEmails, setRemovedManualEmails])
 
   const copyToClipboard = useCallback(async () => {
     if (activeEmails.length === 0) return
@@ -246,7 +246,7 @@ const EmailGroups = ({
       })
       setRemovedManualEmails([])
     }
-  }, [removedManualEmails, setAdhocEmails, setRemovedManualEmails])
+  }, [removedManualEmails, setAdhocEmails, setRemovedEmails, setRemovedManualEmails])
 
   const handleAddContactEmail = useCallback(
     (email) => {

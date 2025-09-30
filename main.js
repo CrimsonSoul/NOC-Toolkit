@@ -73,13 +73,23 @@ const getExcelPaths = () => ({
 async function loadExcelFiles(changedFilePath) {
   const { groupsPath, contactsPath } = getExcelPaths()
 
+  let nextEmailData = cachedData.emailData
+  let nextContactData = cachedData.contactData
+
   if (!changedFilePath || changedFilePath === groupsPath) {
     if (fs.existsSync(groupsPath)) {
       try {
         const groupBuffer = await fs.promises.readFile(groupsPath)
         const groupWorkbook = xlsx.read(groupBuffer, { type: 'buffer' })
-        const groupSheet = groupWorkbook.Sheets[groupWorkbook.SheetNames[0]]
-        cachedData.emailData = xlsx.utils.sheet_to_json(groupSheet, { header: 1 })
+        const [sheetName] = groupWorkbook.SheetNames || []
+
+        if (sheetName && groupWorkbook.Sheets[sheetName]) {
+          const groupSheet = groupWorkbook.Sheets[sheetName]
+          const parsed = xlsx.utils.sheet_to_json(groupSheet, { header: 1 })
+          nextEmailData = Array.isArray(parsed) ? parsed : []
+        } else {
+          nextEmailData = []
+        }
       } catch (err) {
         console.error('Error reading groups file:', err)
       }
@@ -93,14 +103,26 @@ async function loadExcelFiles(changedFilePath) {
       try {
         const contactBuffer = await fs.promises.readFile(contactsPath)
         const contactWorkbook = xlsx.read(contactBuffer, { type: 'buffer' })
-        const contactSheet = contactWorkbook.Sheets[contactWorkbook.SheetNames[0]]
-        cachedData.contactData = xlsx.utils.sheet_to_json(contactSheet)
+        const [sheetName] = contactWorkbook.SheetNames || []
+
+        if (sheetName && contactWorkbook.Sheets[sheetName]) {
+          const contactSheet = contactWorkbook.Sheets[sheetName]
+          const parsed = xlsx.utils.sheet_to_json(contactSheet)
+          nextContactData = Array.isArray(parsed) ? parsed : []
+        } else {
+          nextContactData = []
+        }
       } catch (err) {
         console.error('Error reading contacts file:', err)
       }
     } else {
       console.warn('contacts.xlsx not found; using cached contact data')
     }
+  }
+
+  cachedData = {
+    emailData: nextEmailData,
+    contactData: nextContactData,
   }
 }
 
@@ -146,7 +168,15 @@ function watchExcelFiles(testWatcher) {
 
   const debouncedOnUnlink = debounce((filePath) => {
     console.log(`File deleted: ${filePath}`)
-    cachedData = { emailData: [], contactData: [] }
+
+    if (filePath === groupsPath) {
+      cachedData = { ...cachedData, emailData: [] }
+    } else if (filePath === contactsPath) {
+      cachedData = { ...cachedData, contactData: [] }
+    } else {
+      cachedData = { emailData: [], contactData: [] }
+    }
+
     sendExcelUpdate()
   }, DEBOUNCE_DELAY)
 
@@ -174,6 +204,10 @@ function watchExcelFiles(testWatcher) {
  */
 async function safeOpenExternalLink(url) {
   try {
+    if (typeof url !== 'string') {
+      throw new Error('URL must be a string')
+    }
+
     const parsed = new URL(url)
     if (['http:', 'https:'].includes(parsed.protocol)) {
       await shell.openExternal(url)

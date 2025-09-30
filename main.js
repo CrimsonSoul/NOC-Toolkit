@@ -7,6 +7,13 @@ const xlsx = require('xlsx')
 // Base directory where Excel files live. In production this is next to the executable.
 const basePath = app.isPackaged ? path.dirname(process.execPath) : __dirname
 
+const EXCEL_FILE_NAMES = {
+  groups: 'groups.xlsx',
+  contacts: 'contacts.xlsx',
+}
+
+const ALLOWED_EXCEL_FILENAMES = new Set(Object.values(EXCEL_FILE_NAMES))
+
 let win
 let watcher
 let cachedData = { emailData: [], contactData: [] }
@@ -59,9 +66,39 @@ function debounce(fn, delay) {
  * Resolve file paths for the Excel spreadsheets.
  */
 const getExcelPaths = () => ({
-  groupsPath: path.join(basePath, 'groups.xlsx'),
-  contactsPath: path.join(basePath, 'contacts.xlsx'),
+  groupsPath: path.join(basePath, EXCEL_FILE_NAMES.groups),
+  contactsPath: path.join(basePath, EXCEL_FILE_NAMES.contacts),
 })
+
+function resolveExcelFilePath(filename) {
+  if (typeof filename !== 'string') {
+    return null
+  }
+
+  const normalized = path.basename(filename)
+  if (!ALLOWED_EXCEL_FILENAMES.has(normalized)) {
+    return null
+  }
+
+  return path.join(basePath, normalized)
+}
+
+function openExcelFile(filename) {
+  const filePath = resolveExcelFilePath(filename)
+
+  if (!filePath) {
+    console.warn('Blocked attempt to open unexpected Excel file:', filename)
+    return false
+  }
+
+  if (!fs.existsSync(filePath)) {
+    console.warn(`Requested Excel file not found: ${filePath}`)
+    return false
+  }
+
+  shell.openPath(filePath)
+  return true
+}
 
 const readWorkbookData = async ({
   filePath,
@@ -509,11 +546,8 @@ if (process.env.NODE_ENV !== 'test') {
 
   ipcMain.handle('load-excel-data', async () => cachedData)
 
-  ipcMain.on('open-excel-file', (event, filename) => {
-    const filePath = path.join(basePath, filename)
-    if (fs.existsSync(filePath)) {
-      shell.openPath(filePath)
-    }
+  ipcMain.on('open-excel-file', (_event, filename) => {
+    openExcelFile(filename)
   })
 
   ipcMain.handle('open-external-link', async (_event, url) => {
@@ -551,5 +585,5 @@ module.exports = {
   __setWin: (w) => (win = w),
   __setCachedData: (data) => (cachedData = data),
   getCachedData: () => cachedData,
-  __testables: { loadExcelFiles, sendExcelUpdate, safeOpenExternalLink },
+  __testables: { loadExcelFiles, sendExcelUpdate, safeOpenExternalLink, openExcelFile },
 }

@@ -21,6 +21,21 @@ const formatRefreshTimestamp = (date) => refreshTimestampFormatter.format(date)
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const VALID_TABS = new Set(['email', 'contact', 'radar'])
 
+const ensureArray = (value) => (Array.isArray(value) ? value : [])
+
+const sanitizeExcelPayload = (payload) => {
+  if (!payload || typeof payload !== 'object') {
+    return { emailData: [], contactData: [] }
+  }
+
+  const { emailData, contactData } = payload
+
+  return {
+    emailData: ensureArray(emailData),
+    contactData: ensureArray(contactData),
+  }
+}
+
 const getStoredTabPreference = () => {
   if (typeof window === 'undefined' || !window.localStorage) {
     return null
@@ -67,8 +82,9 @@ function App() {
     }
 
     try {
-      const { emailData: nextEmailData = [], contactData: nextContactData = [] } =
-        await window.nocListAPI.loadExcelData()
+      const { emailData: nextEmailData, contactData: nextContactData } = sanitizeExcelPayload(
+        await window.nocListAPI.loadExcelData(),
+      )
       setEmailData(nextEmailData)
       setContactData(nextContactData)
       setLastRefresh(formatRefreshTimestamp(new Date()))
@@ -94,8 +110,9 @@ function App() {
 
     const unsubscribe = window.nocListAPI.onExcelDataUpdate((data) => {
       toast.success('Excel files updated automatically!')
-      setEmailData(data.emailData || [])
-      setContactData(data.contactData || [])
+      const { emailData: nextEmailData, contactData: nextContactData } = sanitizeExcelPayload(data)
+      setEmailData(nextEmailData)
+      setContactData(nextContactData)
       setLastRefresh(formatRefreshTimestamp(new Date()))
     })
 

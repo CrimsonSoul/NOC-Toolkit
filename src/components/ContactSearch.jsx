@@ -11,11 +11,9 @@ import React, {
 } from 'react'
 import { VariableSizeList } from 'react-window'
 import { toast } from 'react-hot-toast'
-import { formatPhones } from '../utils/formatPhones'
-import { findEmailAddress, getContactInitials } from '../utils/findEmailAddress'
-import { getPreferredPhoneValue } from '../utils/contactInfo'
 import { normalizeSearchText } from '../utils/normalizeText'
 import { notifyAdhocEmailResult } from '../utils/notifyAdhocEmailResult'
+import { buildIndexedContacts } from '../utils/contactIndex'
 
 const MIN_COLUMN_WIDTH = 260
 const MIN_LIST_HEIGHT = 320
@@ -66,47 +64,10 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
   const availableHeightRef = useRef(MIN_LIST_HEIGHT)
   const totalMeasuredHeightRef = useRef(0)
 
-  const getContactKey = useCallback((contact, index) => {
-    return (
-      contact?.Email ||
-      contact?.EmailAddress ||
-      contact?.['Email Address'] ||
-      contact?.email ||
-      contact?.['E-mail'] ||
-      contact?.Name ||
-      index
-    )
-  }, [])
-
-  const indexedContacts = useMemo(() => {
-    if (!Array.isArray(contactData)) {
-      return []
-    }
-
-    return contactData.reduce((acc, contact, index) => {
-      if (!contact || typeof contact !== 'object') {
-        return acc
-      }
-
-      const emailAddress = findEmailAddress(contact)
-      const phoneValue = getPreferredPhoneValue(contact)
-      const searchText = Object.values(contact)
-        .map((value) => normalizeSearchText(value))
-        .filter(Boolean)
-        .join(' ')
-
-      acc.push({
-        raw: contact,
-        key: getContactKey(contact, index),
-        emailAddress,
-        initials: getContactInitials(contact?.Name),
-        formattedPhone: formatPhones(phoneValue),
-        searchText,
-      })
-
-      return acc
-    }, [])
-  }, [contactData, getContactKey])
+  const indexedContacts = useMemo(
+    () => buildIndexedContacts(contactData),
+    [contactData],
+  )
 
   const filtered = useMemo(() => {
     const q = normalizeSearchText(deferredQuery)
@@ -561,11 +522,11 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
                 >
                   {row.map((contact, columnIndex) => {
                     const globalIndex = index * columnCount + columnIndex
-                    const { raw, emailAddress, initials, formattedPhone, key } = contact
-                    const displayName = raw?.Name || emailAddress || 'Unknown'
+                    const { raw, email, initials, formattedPhone, key } = contact
+                    const displayName = raw?.Name || email || 'Unknown'
 
                     const handleAddToList = () => {
-                      if (!emailAddress) {
+                      if (!email) {
                         toast.error('No email address available for this contact')
                         return
                       }
@@ -575,8 +536,8 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
                         return
                       }
 
-                      const result = addAdhocEmail(emailAddress, { switchToEmailTab: true })
-                      notifyAdhocEmailResult(emailAddress, result)
+                      const result = addAdhocEmail(email, { switchToEmailTab: true })
+                      notifyAdhocEmailResult(email, result)
                     }
 
                     return (
@@ -592,9 +553,9 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
 
                           <div className="contact-card__row">
                             <span className="label">Email</span>
-                            {emailAddress ? (
-                              <a href={`mailto:${emailAddress}`} style={{ whiteSpace: 'nowrap' }}>
-                                {emailAddress}
+                            {email ? (
+                              <a href={`mailto:${email}`} style={{ whiteSpace: 'nowrap' }}>
+                                {email}
                               </a>
                             ) : (
                               <span>N/A</span>
@@ -613,12 +574,10 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
                               onKeyDown={(e) => handleKeyDown(e, globalIndex)}
                               onFocus={() => setActiveIndex(globalIndex)}
                               type="button"
-                              disabled={
-                                typeof addAdhocEmail !== 'function' || !emailAddress
-                              }
+                              disabled={typeof addAdhocEmail !== 'function' || !email}
                               data-active={activeIndex === globalIndex ? 'true' : undefined}
                             >
-                              {emailAddress ? 'Add to Email List' : 'Email Unavailable'}
+                              {email ? 'Add to Email List' : 'Email Unavailable'}
                             </button>
                           </div>
                         </article>

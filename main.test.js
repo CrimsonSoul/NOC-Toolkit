@@ -1,3 +1,4 @@
+import fs from 'fs'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createRequire } from 'module'
 import path from 'path'
@@ -159,5 +160,54 @@ describe('safeOpenExternalLink', () => {
     expect(electronStub.shell.openExternal).not.toHaveBeenCalled()
     expect(errorSpy).toHaveBeenCalledTimes(2)
     errorSpy.mockRestore()
+  })
+})
+
+describe('openExcelFile', () => {
+  it('opens known Excel files', () => {
+    const openPathSpy = vi.spyOn(electronStub.shell, 'openPath').mockResolvedValue('')
+    const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true)
+
+    const result = main.__testables.openExcelFile('groups.xlsx')
+
+    expect(result).toBe(true)
+    expect(openPathSpy).toHaveBeenCalledWith(path.join(__dirname, 'groups.xlsx'))
+
+    openPathSpy.mockRestore()
+    existsSpy.mockRestore()
+  })
+
+  it('blocks unexpected filenames', () => {
+    const openPathSpy = vi.spyOn(electronStub.shell, 'openPath')
+    const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true)
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const result = main.__testables.openExcelFile('../secrets.txt')
+
+    expect(result).toBe(false)
+    expect(openPathSpy).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalled()
+
+    openPathSpy.mockRestore()
+    existsSpy.mockRestore()
+    warnSpy.mockRestore()
+  })
+
+  it('warns when the requested file is missing', () => {
+    const openPathSpy = vi.spyOn(electronStub.shell, 'openPath')
+    const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(false)
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const result = main.__testables.openExcelFile('contacts.xlsx')
+
+    expect(result).toBe(false)
+    expect(openPathSpy).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Requested Excel file not found'),
+    )
+
+    openPathSpy.mockRestore()
+    existsSpy.mockRestore()
+    warnSpy.mockRestore()
   })
 })

@@ -5,29 +5,13 @@ import React, {
   useRef,
   useEffect,
   memo,
+  useDeferredValue,
 } from 'react'
 import { toast } from 'react-hot-toast'
 import { findEmailAddress, getContactInitials } from '../utils/findEmailAddress'
 import { formatPhones } from '../utils/formatPhones'
-
-const PHONE_FIELDS = [
-  'Phone',
-  'PhoneNumber',
-  'Phone Number',
-  'Primary Phone',
-  'Primary Phone Number',
-  'Business Phone',
-  'Business Phone Number',
-  'Work Phone',
-  'WorkPhone',
-  'Mobile Phone',
-  'MobilePhone',
-  'Mobile',
-  'Cell',
-  'Cell Phone',
-  'Telephone',
-  'Tel',
-]
+import { getPreferredPhoneValue } from '../utils/contactInfo'
+import { normalizeSearchText } from '../utils/normalizeText'
 
 /**
  * Manage selection of email groups and creation of merged mailing lists.
@@ -49,7 +33,6 @@ const EmailGroups = ({
 }) => {
   const [copied, setCopied] = useState(false)
   const [searchInput, setSearchInput] = useState('')
-  const [search, setSearch] = useState('')
   const [removedEmails, setRemovedEmails] = useState([])
   const [removedManualEmails, setRemovedManualEmails] = useState([])
   const [isContactPickerOpen, setIsContactPickerOpen] = useState(false)
@@ -57,30 +40,60 @@ const EmailGroups = ({
   const timeoutRef = useRef(null)
   const contactSearchRef = useRef(null)
 
+  const deferredGroupQuery = useDeferredValue(searchInput)
+  const deferredContactQuery = useDeferredValue(contactQuery)
+
   const groups = useMemo(() => {
-    if (emailData.length === 0) return []
-    const [headers, ...rows] = emailData
-    return headers.map((name, i) => ({
-      name,
-      emails: rows.map(row => row[i]).filter(Boolean),
-      _search: name.toLowerCase(),
-    }))
+    if (!Array.isArray(emailData) || emailData.length === 0) {
+      return []
+    }
+
+    const [headers = [], ...rows] = emailData
+
+    if (!Array.isArray(headers) || headers.length === 0) {
+      return []
+    }
+
+    return headers.reduce((acc, header, columnIndex) => {
+      const label = header == null ? '' : String(header).trim()
+      if (!label) {
+        return acc
+      }
+
+      const emails = rows
+        .map((row) => (Array.isArray(row) ? row[columnIndex] : undefined))
+        .filter((value) => typeof value === 'string' && value.trim().length > 0)
+        .map((value) => value.trim())
+
+      acc.push({
+        name: label,
+        emails,
+        _search: normalizeSearchText(label),
+      })
+
+      return acc
+    }, [])
   }, [emailData])
 
-  useEffect(() => {
-    const handle = setTimeout(() => setSearch(searchInput), 300)
-    return () => clearTimeout(handle)
-  }, [searchInput])
-
   const filteredGroups = useMemo(() => {
-    const term = search.toLowerCase()
+    const term = normalizeSearchText(deferredGroupQuery)
+    if (!term) {
+      return groups
+    }
     return groups.filter((group) => group._search.includes(term))
-  }, [groups, search])
+  }, [groups, deferredGroupQuery])
 
   const indexedContacts = useMemo(() => {
-    return contactData.map((contact, index) => {
-      const phoneField = PHONE_FIELDS.find((field) => contact?.[field])
-      const phoneValue = phoneField ? contact[phoneField] : contact?.Phone
+    if (!Array.isArray(contactData)) {
+      return []
+    }
+
+    return contactData.reduce((acc, contact, index) => {
+      if (!contact || typeof contact !== 'object') {
+        return acc
+      }
+
+      const phoneValue = getPreferredPhoneValue(contact)
       const key =
         contact?.Email ||
         contact?.EmailAddress ||
@@ -90,27 +103,31 @@ const EmailGroups = ({
         contact?.Name ||
         index
 
-      return {
+      const searchText = Object.values(contact)
+        .map((value) => normalizeSearchText(value))
+        .filter(Boolean)
+        .join(' ')
+
+      acc.push({
         raw: contact,
         key,
         email: findEmailAddress(contact),
         initials: getContactInitials(contact?.Name),
         phone: phoneValue,
         formattedPhone: formatPhones(phoneValue),
-        searchText: Object.values(contact)
-          .map((value) => (value == null ? '' : String(value)))
-          .join(' ')
-          .toLowerCase(),
-      }
-    })
+        searchText,
+      })
+
+      return acc
+    }, [])
   }, [contactData])
 
   const filteredContacts = useMemo(() => {
-    const term = contactQuery.trim().toLowerCase()
+    const term = normalizeSearchText(deferredContactQuery)
     return term
       ? indexedContacts.filter((contact) => contact.searchText.includes(term))
       : indexedContacts
-  }, [contactQuery, indexedContacts])
+  }, [deferredContactQuery, indexedContacts])
 
   const groupMap = useMemo(
     () => new Map(groups.map((g) => [g.name, g.emails])),
@@ -297,14 +314,13 @@ const EmailGroups = ({
               type="text"
               placeholder="Search groups..."
               value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="input search-input"
             />
             {searchInput && (
               <button
                 onClick={() => {
                   setSearchInput('')
-                  setSearch('')
                 }}
                 className="clear-btn"
                 title="Clear search"
@@ -426,7 +442,7 @@ const EmailGroups = ({
                   type="text"
                   placeholder="Search contacts..."
                   value={contactQuery}
-                  onChange={e => setContactQuery(e.target.value)}
+                  onChange={(e) => setContactQuery(e.target.value)}
                   className="input search-input"
                 />
                 {contactQuery && (
@@ -454,40 +470,44 @@ const EmailGroups = ({
                       <div className="contact-picker__identity">
                         <div className="contact-picker__avatar">{contact.initials}</div>
                         <div>
-                          <h3 className="contact-picker__name">{contact.raw.Name || contact.email || 'Unknown'}</h3>
+                          <h3 className="contact-picker__name">
+                            {contact.raw.Name || contact.email || 'Unknown'}
+                          </h3>
                           {contact.raw.Title && (
-                          <p className="contact-picker__title">{contact.raw.Title}</p>
-                        )}
+                            <p className="contact-picker__title">{contact.raw.Title}</p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="contact-picker__details">
-                      <div>
-                        <span className="label">Email</span>
-                        {contact.email ? (
-                          <a href={`mailto:${contact.email}`}>{contact.email}</a>
-                        ) : (
-                          <span>Not available</span>
-                        )}
+                      <div className="contact-picker__details">
+                        <div>
+                          <span className="label">Email</span>
+                          {contact.email ? (
+                            <a href={`mailto:${contact.email}`}>{contact.email}</a>
+                          ) : (
+                            <span>Not available</span>
+                          )}
+                        </div>
+                        <div>
+                          <span className="label">Phone</span>
+                          <span>{contact.formattedPhone || 'Not available'}</span>
+                        </div>
                       </div>
-                      <div>
-                        <span className="label">Phone</span>
-                        <span>{contact.formattedPhone || 'Not available'}</span>
+                      <div className="contact-picker__actions">
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-small"
+                          onClick={() => handleAddContactEmail(contact)}
+                          disabled={
+                            typeof addAdhocEmail !== 'function' || !contact.email || isAlreadyAdded
+                          }
+                        >
+                          {!contact.email
+                            ? 'Email Unavailable'
+                            : isAlreadyAdded
+                              ? 'Already Added'
+                              : 'Add to List'}
+                        </button>
                       </div>
-                    </div>
-                    <div className="contact-picker__actions">
-                      <button
-                        type="button"
-                        className="btn btn-outline btn-small"
-                        onClick={() => handleAddContactEmail(contact)}
-                        disabled={!addAdhocEmail || !contact.email || isAlreadyAdded}
-                      >
-                        {!contact.email
-                          ? 'Email Unavailable'
-                          : isAlreadyAdded
-                            ? 'Already Added'
-                            : 'Add to List'}
-                      </button>
-                    </div>
                     </article>
                   )
                 })

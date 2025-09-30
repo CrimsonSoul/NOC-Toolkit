@@ -35,6 +35,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
   const listRef = useRef(null)
   const itemRefs = useRef(new Map())
   const sizeMapRef = useRef(new Map())
+  const rowObserversRef = useRef(new Map())
   const pendingResetIndexRef = useRef(null)
   const scheduledResetRef = useRef(null)
   const [activeIndex, setActiveIndex] = useState(-1)
@@ -115,6 +116,8 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
   useEffect(() => {
     itemRefs.current = new Map()
     sizeMapRef.current = new Map()
+    rowObserversRef.current.forEach((observer) => observer.disconnect())
+    rowObserversRef.current.clear()
     listRef.current?.resetAfterIndex?.(0, true)
   }, [filtered, columnCount])
 
@@ -265,11 +268,27 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
     [scheduleResetAfterIndex],
   )
 
+  useEffect(() => () => {
+    rowObserversRef.current.forEach((observer) => observer.disconnect())
+    rowObserversRef.current.clear()
+  }, [])
+
+  const disconnectRowObserver = useCallback((index) => {
+    const existingObserver = rowObserversRef.current.get(index)
+    if (existingObserver) {
+      existingObserver.disconnect()
+      rowObserversRef.current.delete(index)
+    }
+  }, [])
+
   const registerRow = useCallback(
     (index, node) => {
       if (!node) {
+        disconnectRowObserver(index)
         return
       }
+
+      disconnectRowObserver(index)
 
       const measure = () => {
         const measuredHeight = Math.max(
@@ -289,8 +308,16 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
       } else {
         setTimeout(measure, 0)
       }
+
+      if (typeof ResizeObserver !== 'undefined') {
+        const observer = new ResizeObserver(() => {
+          measure()
+        })
+        observer.observe(node)
+        rowObserversRef.current.set(index, observer)
+      }
     },
-    [setRowHeight],
+    [disconnectRowObserver, setRowHeight],
   )
 
   const setItemRef = useCallback((index, node) => {

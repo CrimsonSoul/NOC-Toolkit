@@ -15,6 +15,7 @@ import { formatPhones } from '../utils/formatPhones'
 import { findEmailAddress, getContactInitials } from '../utils/findEmailAddress'
 import { getPreferredPhoneValue } from '../utils/contactInfo'
 import { normalizeSearchText } from '../utils/normalizeText'
+import { notifyAdhocEmailResult } from '../utils/notifyAdhocEmailResult'
 
 const MIN_COLUMN_WIDTH = 260
 const MIN_LIST_HEIGHT = 320
@@ -535,8 +536,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
       </div>
 
       <div className="contact-search__surface list-surface minimal-scrollbar" ref={listSurfaceRef}>
-        {filtered.length > 0 ? (
-        listWidth > 0 && (
+        {filtered.length > 0 && listWidth > 0 ? (
           <VariableSizeList
             ref={listRef}
             height={listHeight}
@@ -576,14 +576,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
                       }
 
                       const result = addAdhocEmail(emailAddress, { switchToEmailTab: true })
-
-                      if (result === 'added') {
-                        toast.success(`Added ${emailAddress} to the list`)
-                      } else if (result === 'duplicate') {
-                        toast('Email already in list', { icon: 'ℹ️' })
-                      } else {
-                        toast.error('Invalid email address')
-                      }
+                      notifyAdhocEmailResult(emailAddress, result)
                     }
 
                     return (
@@ -636,7 +629,6 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
               )
             }}
           </VariableSizeList>
-        )
         ) : (
           <div className="empty-state">No matching contacts.</div>
         )}

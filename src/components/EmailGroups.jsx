@@ -12,6 +12,7 @@ import { findEmailAddress, getContactInitials } from '../utils/findEmailAddress'
 import { formatPhones } from '../utils/formatPhones'
 import { getPreferredPhoneValue } from '../utils/contactInfo'
 import { normalizeSearchText } from '../utils/normalizeText'
+import { notifyAdhocEmailResult } from '../utils/notifyAdhocEmailResult'
 
 /**
  * Manage selection of email groups and creation of merged mailing lists.
@@ -42,6 +43,7 @@ const EmailGroups = ({
 
   const deferredGroupQuery = useDeferredValue(searchInput)
   const deferredContactQuery = useDeferredValue(contactQuery)
+  const selectedGroupSet = useMemo(() => new Set(selectedGroups), [selectedGroups])
 
   const groups = useMemo(() => {
     if (!Array.isArray(emailData) || emailData.length === 0) {
@@ -174,8 +176,48 @@ const EmailGroups = ({
 
   const copyToClipboard = useCallback(async () => {
     if (activeEmails.length === 0) return
+
+    const text = activeEmails.join(', ')
+
+    const copyUsingClipboardApi = async () => {
+      if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) {
+        return false
+      }
+      await navigator.clipboard.writeText(text)
+      return true
+    }
+
+    const copyUsingExecCommand = () => {
+      if (typeof document === 'undefined') {
+        return false
+      }
+
+      const textarea = document.createElement('textarea')
+      textarea.value = text
+      textarea.setAttribute('readonly', '')
+      textarea.style.position = 'absolute'
+      textarea.style.left = '-9999px'
+      document.body.appendChild(textarea)
+      textarea.select()
+
+      let succeeded = false
+      try {
+        succeeded = document.execCommand('copy')
+      } catch (error) {
+        console.error('Legacy clipboard copy failed:', error)
+        succeeded = false
+      }
+
+      document.body.removeChild(textarea)
+      return succeeded
+    }
+
     try {
-      await navigator.clipboard.writeText(activeEmails.join(', '))
+      const copied = (await copyUsingClipboardApi()) || copyUsingExecCommand()
+      if (!copied) {
+        throw new Error('copy-unsupported')
+      }
+
       setCopied(true)
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
@@ -185,7 +227,8 @@ const EmailGroups = ({
         timeoutRef.current = null
       }, 2000)
       toast.success('Email list copied to clipboard')
-    } catch {
+    } catch (error) {
+      console.error('Failed to copy email list:', error)
       toast.error('Failed to copy')
     }
   }, [activeEmails])
@@ -235,24 +278,17 @@ const EmailGroups = ({
   }, [removedManualEmails, setAdhocEmails, setRemovedManualEmails])
 
   const handleAddContactEmail = useCallback(
-    (contact) => {
+    (email) => {
       if (!addAdhocEmail) return
-      const email = contact.email
+      const normalizedEmail = email?.trim()
 
-      if (!email) {
+      if (!normalizedEmail) {
         toast.error('No email address available for this contact')
         return
       }
 
-      const result = addAdhocEmail(email)
-
-      if (result === 'added') {
-        toast.success(`Added ${email} to the list`)
-      } else if (result === 'duplicate') {
-        toast('Email already in list', { icon: 'ℹ️' })
-      } else {
-        toast.error('Invalid email address')
-      }
+      const result = addAdhocEmail(normalizedEmail)
+      notifyAdhocEmailResult(normalizedEmail, result)
     },
     [addAdhocEmail],
   )
@@ -343,7 +379,7 @@ const EmailGroups = ({
                 key={group.name}
                 onClick={() => toggleSelect(group.name)}
                 className={`list-item-button ${
-                  selectedGroups.includes(group.name) ? 'is-selected' : ''
+                  selectedGroupSet.has(group.name) ? 'is-selected' : ''
                 }`}
               >
                 <span>{group.name}</span>
@@ -460,7 +496,8 @@ const EmailGroups = ({
             <div className="contact-picker__list minimal-scrollbar">
               {filteredContacts.length > 0 ? (
                 filteredContacts.map((contact) => {
-                  const normalizedEmail = contact.email?.toLowerCase()
+                  const trimmedEmail = contact.email?.trim()
+                  const normalizedEmail = trimmedEmail?.toLowerCase()
                   const isAlreadyAdded = normalizedEmail
                     ? activeEmailSet.has(normalizedEmail)
                     : false
@@ -481,8 +518,8 @@ const EmailGroups = ({
                       <div className="contact-picker__details">
                         <div>
                           <span className="label">Email</span>
-                          {contact.email ? (
-                            <a href={`mailto:${contact.email}`}>{contact.email}</a>
+                          {trimmedEmail ? (
+                            <a href={`mailto:${trimmedEmail}`}>{trimmedEmail}</a>
                           ) : (
                             <span>Not available</span>
                           )}
@@ -496,12 +533,12 @@ const EmailGroups = ({
                         <button
                           type="button"
                           className="btn btn-outline btn-small"
-                          onClick={() => handleAddContactEmail(contact)}
+                          onClick={() => handleAddContactEmail(trimmedEmail)}
                           disabled={
-                            typeof addAdhocEmail !== 'function' || !contact.email || isAlreadyAdded
+                            typeof addAdhocEmail !== 'function' || !trimmedEmail || isAlreadyAdded
                           }
                         >
-                          {!contact.email
+                          {!trimmedEmail
                             ? 'Email Unavailable'
                             : isAlreadyAdded
                               ? 'Already Added'

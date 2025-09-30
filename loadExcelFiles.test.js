@@ -65,6 +65,27 @@ describe('incremental Excel loading', () => {
     expect(updated.contactData).toEqual([{ Name: 'Bob', Email: 'bob@example.com' }])
   })
 
+  it('reports which workbook changed', async () => {
+    const resultNoChange = await loadExcelFiles(groupsPath)
+    expect(resultNoChange).toEqual({
+      emailChanged: false,
+      contactChanged: false,
+      didUpdate: false,
+    })
+
+    const newContactWB = xlsx.utils.book_new()
+    const newContactSheet = xlsx.utils.json_to_sheet([{ Name: 'Cara', Email: 'cara@example.com' }])
+    xlsx.utils.book_append_sheet(newContactWB, newContactSheet, 'Sheet1')
+    xlsx.writeFile(newContactWB, contactsPath)
+
+    const resultContactChange = await loadExcelFiles(contactsPath)
+    expect(resultContactChange).toEqual({
+      emailChanged: false,
+      contactChanged: true,
+      didUpdate: true,
+    })
+  })
+
   it('retains cached data when groups file is missing', async () => {
     const initial = getCachedData()
     fs.unlinkSync(groupsPath)

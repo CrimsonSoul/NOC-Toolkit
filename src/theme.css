@@ -372,6 +372,7 @@ body {
   flex-direction: column;
   gap: 1.5rem;
   --contact-header-height: 0px;
+  --contact-list-offset: clamp(0.75rem, 1vw, 1.25rem);
 }
 
 .button-group {
@@ -1210,8 +1211,9 @@ a[href^="mailto:"]:hover {
 
 
 .contact-list-scroll {
-  padding-top: var(--contact-header-height);
-  margin-top: calc(-1 * var(--contact-header-height));
+  padding-top: calc(var(--contact-header-height) + var(--contact-list-offset));
+  scroll-padding-top: calc(var(--contact-header-height) + var(--contact-list-offset));
+  margin-top: 0;
   width: 100%;
   border-radius: 18px;
 }

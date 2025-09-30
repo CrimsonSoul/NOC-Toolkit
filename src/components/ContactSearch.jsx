@@ -336,8 +336,11 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
             ref={ref}
             style={{
               ...style,
-              paddingTop: 'var(--contact-header-height)',
-              marginTop: 'calc(-1 * var(--contact-header-height))',
+              paddingTop:
+                'calc(var(--contact-header-height) + var(--contact-list-offset))',
+              scrollPaddingTop:
+                'calc(var(--contact-header-height) + var(--contact-list-offset))',
+              marginTop: 0,
               outline: 'none',
             }}
             className="contact-list-scroll minimal-scrollbar"
@@ -403,7 +406,12 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
               const row = rows[index]
               return (
                 <div
-                  style={{ ...style, width: listWidth, '--contact-columns': columnCount }}
+                  style={{
+                    ...style,
+                    width: '100%',
+                    maxWidth: '100%',
+                    '--contact-columns': columnCount,
+                  }}
                   className="contact-list__row"
                   ref={(node) => registerRow(index, node)}
                   data-row-index={index}

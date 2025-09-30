@@ -45,6 +45,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
   const deferredQuery = useDeferredValue(query)
   const searchInputRef = useRef(null)
   const containerRef = useRef(null)
+  const listSurfaceRef = useRef(null)
   const headerRef = useRef(null)
   const listRef = useRef(null)
   const itemRefs = useRef(new Map())
@@ -191,8 +192,23 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
 
     container.style.setProperty('--contact-header-height', `${header.offsetHeight}px`)
 
-    const rect = container.getBoundingClientRect()
-    const effectiveWidth = rect.width || container.clientWidth || window.innerWidth || 1024
+    const measurementTarget = listSurfaceRef.current || container
+    const rect = measurementTarget.getBoundingClientRect()
+    let widthValue =
+      rect.width ||
+      measurementTarget.clientWidth ||
+      container.clientWidth ||
+      window.innerWidth ||
+      1024
+
+    if (measurementTarget === listSurfaceRef.current) {
+      const styles = window.getComputedStyle(measurementTarget)
+      const paddingLeft = parsePxValue(styles.paddingLeft)
+      const paddingRight = parsePxValue(styles.paddingRight)
+      widthValue -= paddingLeft + paddingRight
+    }
+
+    const effectiveWidth = Math.max(widthValue, 0)
 
     if (effectiveWidth > 0) {
       setListWidth((prev) => (Math.abs(prev - effectiveWidth) < 0.5 ? prev : effectiveWidth))
@@ -236,11 +252,17 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
     updateLayoutMetrics()
 
     let resizeObserver
+    let surfaceObserver
     const resizeHandler = () => updateLayoutMetrics()
 
     if (typeof ResizeObserver !== 'undefined') {
       resizeObserver = new ResizeObserver(resizeHandler)
       resizeObserver.observe(container)
+
+      if (listSurfaceRef.current) {
+        surfaceObserver = new ResizeObserver(resizeHandler)
+        surfaceObserver.observe(listSurfaceRef.current)
+      }
     }
 
     window.addEventListener('resize', resizeHandler)
@@ -248,6 +270,9 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
     return () => {
       if (resizeObserver) {
         resizeObserver.disconnect()
+      }
+      if (surfaceObserver) {
+        surfaceObserver.disconnect()
       }
       window.removeEventListener('resize', resizeHandler)
     }
@@ -504,7 +529,8 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
         <p className="small-muted m-0">Browse the directory and quickly add people to an ad-hoc list.</p>
       </div>
 
-      {filtered.length > 0 ? (
+      <div className="contact-search__surface list-surface minimal-scrollbar" ref={listSurfaceRef}>
+        {filtered.length > 0 ? (
         listWidth > 0 && (
           <VariableSizeList
             ref={listRef}
@@ -599,9 +625,10 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
             }}
           </VariableSizeList>
         )
-      ) : (
-        <div className="empty-state">No matching contacts.</div>
-      )}
+        ) : (
+          <div className="empty-state">No matching contacts.</div>
+        )}
+      </div>
     </div>
   )
 }

@@ -1219,8 +1219,8 @@ a[href^="mailto:"]:hover {
 .contact-list__row {
   display: grid;
   grid-template-columns: repeat(var(--contact-columns, 1), minmax(320px, 1fr));
-  gap: clamp(1rem, 1.6vw, 1.5rem);
-  padding: 0;
+  gap: clamp(1.25rem, 2vw, 1.9rem);
+  padding: clamp(0.35rem, 0.8vw, 0.75rem) 0 clamp(0.75rem, 1.4vw, 1.2rem);
   margin: 0;
   box-sizing: border-box;
   align-items: stretch;

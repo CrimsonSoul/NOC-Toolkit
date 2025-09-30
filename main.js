@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, shell } = require('electron')
 const path = require('path')
 const fs = require('fs')
+const crypto = require('crypto')
 const chokidar = require('chokidar')
 const xlsx = require('xlsx')
 
@@ -17,7 +18,22 @@ const ALLOWED_EXCEL_FILENAMES = new Set(Object.values(EXCEL_FILE_NAMES))
 let win
 let watcher
 let cachedData = { emailData: [], contactData: [] }
+const workbookSignatures = { groups: null, contacts: null }
 const isMac = process.platform === 'darwin'
+
+const normalizePath = (filePath) => {
+  if (typeof filePath !== 'string' || filePath.length === 0) {
+    return null
+  }
+
+  try {
+    const resolved = path.resolve(filePath)
+    return process.platform === 'win32' ? resolved.toLowerCase() : resolved
+  } catch (error) {
+    console.warn('Unable to normalize path:', filePath, error)
+    return null
+  }
+}
 
 /**
  * Resolve an icon path for the application window if one exists.
@@ -120,6 +136,7 @@ const readWorkbookData = async ({
   filePath,
   sheetToJsonOptions,
   fallback,
+  fallbackSignature,
   missingLogMessage,
   errorLogMessage,
 }) => {
@@ -127,28 +144,34 @@ const readWorkbookData = async ({
     if (missingLogMessage) {
       console.warn(missingLogMessage)
     }
-    return fallback
+    return { data: fallback, signature: fallbackSignature }
   }
 
   try {
     const buffer = await fs.promises.readFile(filePath)
+    const signature = crypto.createHash('sha1').update(buffer).digest('hex')
+
+    if (signature && signature === fallbackSignature && fallback) {
+      return { data: fallback, signature }
+    }
+
     const workbook = xlsx.read(buffer, { type: 'buffer' })
     const [sheetName] = workbook.SheetNames || []
 
     if (sheetName && workbook.Sheets[sheetName]) {
       const sheet = workbook.Sheets[sheetName]
       const parsed = xlsx.utils.sheet_to_json(sheet, sheetToJsonOptions)
-      return Array.isArray(parsed) ? parsed : []
+      return { data: Array.isArray(parsed) ? parsed : [], signature }
     }
 
-    return []
+    return { data: [], signature }
   } catch (error) {
     if (errorLogMessage) {
       console.error(errorLogMessage, error)
     } else {
       console.error(error)
     }
-    return []
+    return { data: [], signature: fallbackSignature }
   }
 }
 
@@ -162,34 +185,50 @@ const readWorkbookData = async ({
 async function loadExcelFiles(changedFilePath) {
   const { groupsPath, contactsPath } = getExcelPaths()
 
+  const normalizedGroupsPath = normalizePath(groupsPath)
+  const normalizedContactsPath = normalizePath(contactsPath)
+  const normalizedChangedPath = normalizePath(changedFilePath)
+
   let nextEmailData = cachedData.emailData
   let nextContactData = cachedData.contactData
+  let nextEmailSignature = workbookSignatures.groups
+  let nextContactSignature = workbookSignatures.contacts
 
   const tasks = []
 
-  if (!changedFilePath || changedFilePath === groupsPath) {
+  const shouldReloadGroups =
+    !normalizedChangedPath || normalizedChangedPath === normalizedGroupsPath
+
+  if (shouldReloadGroups) {
     tasks.push(
       readWorkbookData({
         filePath: groupsPath,
         sheetToJsonOptions: { header: 1 },
         fallback: nextEmailData,
+        fallbackSignature: workbookSignatures.groups,
         missingLogMessage: 'groups.xlsx not found; using cached group data',
         errorLogMessage: 'Error reading groups file:',
-      }).then((data) => {
+      }).then(({ data, signature }) => {
         nextEmailData = data
+        nextEmailSignature = signature
       }),
     )
   }
 
-  if (!changedFilePath || changedFilePath === contactsPath) {
+  const shouldReloadContacts =
+    !normalizedChangedPath || normalizedChangedPath === normalizedContactsPath
+
+  if (shouldReloadContacts) {
     tasks.push(
       readWorkbookData({
         filePath: contactsPath,
         fallback: nextContactData,
+        fallbackSignature: workbookSignatures.contacts,
         missingLogMessage: 'contacts.xlsx not found; using cached contact data',
         errorLogMessage: 'Error reading contacts file:',
-      }).then((data) => {
+      }).then(({ data, signature }) => {
         nextContactData = data
+        nextContactSignature = signature
       }),
     )
   }
@@ -198,9 +237,30 @@ async function loadExcelFiles(changedFilePath) {
     await Promise.all(tasks)
   }
 
-  cachedData = {
-    emailData: nextEmailData,
-    contactData: nextContactData,
+  const emailChanged =
+    shouldReloadGroups && nextEmailSignature !== workbookSignatures.groups
+  const contactChanged =
+    shouldReloadContacts && nextContactSignature !== workbookSignatures.contacts
+
+  if (emailChanged || contactChanged) {
+    cachedData = {
+      emailData: nextEmailData,
+      contactData: nextContactData,
+    }
+
+    if (emailChanged) {
+      workbookSignatures.groups = nextEmailSignature
+    }
+
+    if (contactChanged) {
+      workbookSignatures.contacts = nextContactSignature
+    }
+  }
+
+  return {
+    emailChanged,
+    contactChanged,
+    didUpdate: emailChanged || contactChanged,
   }
 }
 
@@ -221,6 +281,8 @@ function sendExcelUpdate() {
  */
 function watchExcelFiles(testWatcher) {
   const { groupsPath, contactsPath } = getExcelPaths()
+  const normalizedGroupsPath = normalizePath(groupsPath)
+  const normalizedContactsPath = normalizePath(contactsPath)
 
   // If a watcher already exists, close it before creating a new one
   if (watcher) {
@@ -260,8 +322,10 @@ function watchExcelFiles(testWatcher) {
   const debouncedOnChange = debounce((filePath) => {
     console.log(`File changed: ${filePath}`)
     loadExcelFiles(filePath)
-      .then(() => {
-        sendExcelUpdate()
+      .then((result) => {
+        if (result?.didUpdate) {
+          sendExcelUpdate()
+        }
       })
       .catch((error) => {
         console.error('Failed to reload Excel data after change:', error)
@@ -271,12 +335,18 @@ function watchExcelFiles(testWatcher) {
   const debouncedOnUnlink = debounce((filePath) => {
     console.log(`File deleted: ${filePath}`)
 
-    if (filePath === groupsPath) {
+    const normalizedPath = normalizePath(filePath)
+
+    if (normalizedPath && normalizedPath === normalizedGroupsPath) {
       cachedData = { ...cachedData, emailData: [] }
-    } else if (filePath === contactsPath) {
+      workbookSignatures.groups = null
+    } else if (normalizedPath && normalizedPath === normalizedContactsPath) {
       cachedData = { ...cachedData, contactData: [] }
+      workbookSignatures.contacts = null
     } else {
       cachedData = { emailData: [], contactData: [] }
+      workbookSignatures.groups = null
+      workbookSignatures.contacts = null
     }
 
     sendExcelUpdate()
@@ -610,7 +680,11 @@ module.exports = {
   watchExcelFiles,
   loadExcelFiles,
   __setWin: (w) => (win = w),
-  __setCachedData: (data) => (cachedData = data),
+  __setCachedData: (data) => {
+    cachedData = data
+    workbookSignatures.groups = null
+    workbookSignatures.contacts = null
+  },
   getCachedData: () => cachedData,
   __testables: { loadExcelFiles, sendExcelUpdate, safeOpenExternalLink, openExcelFile },
 }

@@ -330,7 +330,7 @@ function App() {
         )}
 
         {tab === 'contact' && (
-          <div className="module-card">
+          <div className="module-card module-card--contacts">
             <ContactSearch
               contactData={contactData}
               addAdhocEmail={addAdhocEmail}

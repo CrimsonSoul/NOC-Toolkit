@@ -14,11 +14,12 @@ import { toast } from 'react-hot-toast'
 import { formatPhones } from '../utils/formatPhones'
 import { findEmailAddress, getContactInitials } from '../utils/findEmailAddress'
 
-const MIN_COLUMN_WIDTH = 320
+const MIN_COLUMN_WIDTH = 260
 const MIN_LIST_HEIGHT = 320
 const LIST_BOTTOM_PADDING = 24
-const DEFAULT_ROW_HEIGHT = 340
-const DEFAULT_COLUMN_GAP = 24
+const DEFAULT_ROW_HEIGHT = 260
+const MIN_ROW_HEIGHT = 210
+const DEFAULT_COLUMN_GAP = 20
 
 const parsePxValue = (value) => {
   if (typeof value === 'number') {
@@ -434,7 +435,8 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
           Math.ceil(node.getBoundingClientRect().height || 0),
         )
 
-        const height = measuredHeight > 0 ? Math.max(measuredHeight, DEFAULT_ROW_HEIGHT) : DEFAULT_ROW_HEIGHT
+        const height =
+          measuredHeight > 0 ? Math.max(measuredHeight, MIN_ROW_HEIGHT) : DEFAULT_ROW_HEIGHT
         setRowHeight(index, height)
       }
 

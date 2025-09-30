@@ -221,20 +221,37 @@ function watchExcelFiles(testWatcher) {
 
   // If a watcher already exists, close it before creating a new one
   if (watcher) {
-    watcher.close()
+    const previousWatcher = watcher
+    watcher = null
+    Promise.resolve(previousWatcher.close()).catch((error) => {
+      console.error('Failed to close previous Excel watcher:', error)
+    })
   }
 
-  watcher = testWatcher || chokidar.watch([groupsPath, contactsPath], {
-    persistent: true,
-    ignoreInitial: true,
-  })
+  watcher =
+    testWatcher ||
+    chokidar.watch([groupsPath, contactsPath], {
+      persistent: true,
+      ignoreInitial: true,
+      awaitWriteFinish: {
+        stabilityThreshold: 750,
+        pollInterval: 100,
+      },
+      ignorePermissionErrors: true,
+      depth: 0,
+    })
 
   // Expose a cleanup function so callers/tests can stop watching explicitly
   const cleanup = () => {
-    if (watcher) {
-      watcher.close()
-      watcher = null
+    if (!watcher) {
+      return
     }
+
+    const closingWatcher = watcher
+    watcher = null
+    Promise.resolve(closingWatcher.close()).catch((error) => {
+      console.error('Failed to close Excel watcher:', error)
+    })
   }
 
   const debouncedOnChange = debounce((filePath) => {

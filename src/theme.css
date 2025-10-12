@@ -941,7 +941,6 @@ body {
 }
 
 .text-center { text-align: center; }
-.line-tight { line-height: 1.2; }
 .large-bold { font-size: 1.3rem; font-weight: 700; }
 
 .app-header .large-bold {
@@ -950,17 +949,9 @@ body {
 .small-text { font-size: 0.9rem; }
 .small-muted { font-size: 0.9rem; color: var(--text-muted); }
 .text-muted { color: var(--text-muted); }
-.self-center { align-self: center; }
-.flex { display: flex; }
-.flex-wrap { display: flex; flex-wrap: wrap; }
 .align-center { align-items: center; }
 .gap-0-5 { gap: 0.5rem; }
-.gap-1 { gap: 1rem; }
-.mb-0 { margin-bottom: 0; }
-.mb-0-5 { margin-bottom: 0.5rem; }
 .mb-1 { margin-bottom: 1rem; }
-.mb-1-5 { margin-bottom: 1.5rem; }
-.mt-0-5 { margin-top: 0.5rem; }
 .m-0 { margin: 0; }
 .rounded-6 { border-radius: 12px; }
 

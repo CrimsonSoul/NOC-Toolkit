@@ -90,7 +90,7 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1.08fr) minmax(190px, 0.9fr) minmax(220px, max-content);
   grid-template-areas:
-    'code status'
+    'cluster code status'
     'tabs tabs tabs';
   align-items: center;
   column-gap: clamp(0.45rem, 0.85vw, 1.15rem);
@@ -101,9 +101,13 @@ body {
 }
 
 .app-header__cluster {
-  display: flex;
-  justify-content: center;
-  margin-bottom: clamp(0.55rem, 0.85vw, 1.15rem);
+  grid-area: cluster;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: clamp(0.55rem, 0.85vw, 1.15rem);
+  row-gap: 0.25rem;
+  min-width: 0;
 }
 
 .app-header__title {
@@ -263,10 +267,15 @@ body {
     width: 100%;
     grid-template-columns: minmax(0, 0.98fr) minmax(0, 0.78fr);
     grid-template-areas:
+      'cluster cluster'
       'code status'
       'tabs tabs';
     row-gap: clamp(0.45rem, 0.85vw, 0.9rem);
     align-items: center;
+  }
+
+  .app-header__cluster {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .app-header__status {
@@ -283,6 +292,7 @@ body {
     grid-template-columns: minmax(0, 1fr);
     row-gap: 0.65rem;
     grid-template-areas:
+      'cluster'
       'code'
       'status'
       'tabs';

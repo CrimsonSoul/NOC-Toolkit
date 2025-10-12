@@ -471,7 +471,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
         <div className="stack-on-small align-center gap-0-5 mb-1">
           <button
             onClick={() => window.nocListAPI?.openFile?.('contacts.xlsx')}
-            className="btn btn-secondary open-contact-btn"
+            className="btn btn-secondary"
           >
             Open Contact List Excel
           </button>

@@ -91,6 +91,17 @@ const EmailGroups = ({
     return { groups: nextGroups, groupMap: nextGroupMap }
   }, [emailData])
 
+  useEffect(() => {
+    setSelectedGroups((prev) => {
+      if (prev.length === 0) {
+        return prev
+      }
+
+      const filtered = prev.filter((name) => groupMap.has(name))
+      return filtered.length === prev.length ? prev : filtered
+    })
+  }, [groupMap, setSelectedGroups])
+
   const filteredGroups = useMemo(() => {
     const term = normalizeSearchText(deferredGroupQuery)
     if (!term) {

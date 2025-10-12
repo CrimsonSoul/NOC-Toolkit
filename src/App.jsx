@@ -340,12 +340,12 @@ function App() {
       <Toaster position="top-right" toastOptions={toastOptions} />
 
       <header className="app-header" ref={headerRef}>
+        <div className="app-header__cluster">
+          <span className="app-header__title" aria-label="NOC Toolkit">
+            NOC Toolkit
+          </span>
+        </div>
         <div className="app-header-card">
-          <div className="app-header__cluster">
-            <span className="app-header__title" aria-label="NOC Toolkit">
-              NOC Toolkit
-            </span>
-          </div>
           <div className="app-header__code">
             <CodeDisplay
               currentCode={currentCode}

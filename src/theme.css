@@ -418,14 +418,6 @@ body {
   min-height: 0;
 }
 
-.module-card--radar .sticky-header {
-  position: static;
-  margin: 0;
-  padding: 0;
-  box-shadow: none;
-  border: none;
-}
-
 .module-card .sticky-header {
   position: sticky;
   top: calc(var(--app-header-offset, 0px) + clamp(0.5rem, 1.2vw, 1.25rem));

@@ -71,7 +71,7 @@ const DispatcherRadar = () => {
           <div className="radar-fallback__actions">
             <button
               type="button"
-              className="btn btn-primary"
+              className="btn btn-accent"
               onClick={() => {
                 setError(false)
                 setReloadKey((prev) => prev + 1)

@@ -1,0 +1,54 @@
+--- src/theme.css	2025-10-12 01:38:12.646010135 +0000
++++ src/theme.css.new	2025-10-12 01:38:23.287109679 +0000
+@@ -90,7 +90,7 @@
+   display: grid;
+   grid-template-columns: minmax(0, 1.08fr) minmax(190px, 0.9fr) minmax(220px, max-content);
+   grid-template-areas:
+-    'cluster code status'
++    'code status'
+     'tabs tabs tabs';
+   align-items: center;
+   column-gap: clamp(0.45rem, 0.85vw, 1.15rem);
+@@ -101,13 +101,9 @@
+ }
+
+ .app-header__cluster {
+-  grid-area: cluster;
+-  display: grid;
+-  grid-template-columns: auto minmax(0, 1fr);
+-  align-items: center;
+-  column-gap: clamp(0.55rem, 0.85vw, 1.15rem);
+-  row-gap: 0.25rem;
+-  min-width: 0;
++  display: flex;
++  justify-content: center;
++  margin-bottom: clamp(0.55rem, 0.85vw, 1.15rem);
+ }
+
+ .app-header__title {
+@@ -267,17 +263,12 @@
+     width: 100%;
+     grid-template-columns: minmax(0, 0.98fr) minmax(0, 0.78fr);
+     grid-template-areas:
+-      'cluster cluster'
+       'code status'
+       'tabs tabs';
+     row-gap: clamp(0.45rem, 0.85vw, 0.9rem);
+     align-items: center;
+   }
+
+-  .app-header__cluster {
+-    grid-template-columns: minmax(0, 1fr);
+-  }
+-
+   .app-header__status {
+     justify-content: flex-end;
+   }
+@@ -292,7 +283,6 @@
+     grid-template-columns: minmax(0, 1fr);
+     row-gap: 0.65rem;
+     grid-template-areas:
+-      'cluster'
+       'code'
+       'status'
+       'tabs';

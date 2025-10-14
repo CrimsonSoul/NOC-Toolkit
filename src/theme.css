@@ -221,6 +221,7 @@ body {
   letter-spacing: 0.04em;
   line-height: 1.2;
   white-space: nowrap;
+  min-width: 0;
 }
 
 .clock {
@@ -250,6 +251,21 @@ body {
 @media (max-width: 980px) {
   .app-header-card {
     grid-template-columns: minmax(0, 1fr) minmax(180px, 0.92fr) minmax(210px, max-content);
+  }
+}
+
+@media (max-width: 1040px) {
+  .app-header__refresh {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: 0.28rem;
+  }
+
+  .app-header__timestamp {
+    white-space: normal;
+    flex-basis: 100%;
+    width: 100%;
+    text-align: right;
   }
 }
 

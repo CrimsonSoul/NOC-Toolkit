@@ -147,4 +147,60 @@ describe('EmailGroups', () => {
     const disabledButton = await screen.findByRole('button', { name: /Already Added/i })
     expect(disabledButton).toBeDisabled()
   })
+
+  it('deduplicates emails regardless of casing', () => {
+    render(
+      <EmailGroups
+        emailData={[
+          ['Dup Group'],
+          ['Test@example.com'],
+          ['test@example.com'],
+        ]}
+        adhocEmails={[]}
+        selectedGroups={['Dup Group']}
+        setSelectedGroups={() => {}}
+        setAdhocEmails={() => {}}
+        contactData={[]}
+        addAdhocEmail={() => {}}
+      />
+    )
+
+    const chips = screen.getAllByRole('listitem')
+    expect(chips).toHaveLength(1)
+    expect(screen.getByText('Test@example.com')).toBeInTheDocument()
+  })
+
+  it('persists removals even if the email returns with different casing', async () => {
+    const user = userEvent.setup()
+
+    function Wrapper() {
+      const [selected, setSelected] = useState(['Upper Dup', 'Lower Dup'])
+      return (
+        <EmailGroups
+          emailData={[
+            ['Upper Dup', 'Lower Dup'],
+            ['Test@example.com', 'test@example.com'],
+          ]}
+          adhocEmails={[]}
+          selectedGroups={selected}
+          setSelectedGroups={setSelected}
+          setAdhocEmails={() => {}}
+          contactData={[]}
+          addAdhocEmail={() => {}}
+        />
+      )
+    }
+
+    render(<Wrapper />)
+
+    const chip = screen.getByRole('listitem', { name: /test@example.com/i })
+    await user.click(chip)
+
+    expect(screen.queryByRole('listitem', { name: /test@example.com/i })).not.toBeInTheDocument()
+
+    const upperButton = screen.getByRole('button', { name: /Upper Dup/i })
+    await user.click(upperButton)
+
+    expect(screen.queryByRole('listitem', { name: /test@example.com/i })).not.toBeInTheDocument()
+  })
 })

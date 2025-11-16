@@ -12,6 +12,15 @@ import { normalizeSearchText } from '../utils/normalizeText'
 import { notifyAdhocEmailResult } from '../utils/notifyAdhocEmailResult'
 import { buildIndexedContacts } from '../utils/contactIndex'
 
+const normalizeEmail = (email) => {
+  if (typeof email !== 'string') {
+    return null
+  }
+
+  const trimmed = email.trim()
+  return trimmed ? trimmed.toLowerCase() : null
+}
+
 /**
  * Manage selection of email groups and creation of merged mailing lists.
  * @param {Object} props
@@ -127,8 +136,22 @@ const EmailGroups = ({
   }, [contactSearchTerm, indexedContacts])
 
   const mergedEmails = useMemo(() => {
+    const normalizedSet = new Set()
+    const merged = []
     const all = selectedGroups.flatMap((name) => groupMap.get(name) || [])
-    return [...new Set([...all, ...adhocEmails])]
+    const combined = [...all, ...adhocEmails]
+
+    for (const email of combined) {
+      const normalized = normalizeEmail(email)
+      if (!normalized || normalizedSet.has(normalized)) {
+        continue
+      }
+
+      normalizedSet.add(normalized)
+      merged.push(email)
+    }
+
+    return merged
   }, [selectedGroups, groupMap, adhocEmails])
 
   const removedEmailSet = useMemo(
@@ -136,13 +159,30 @@ const EmailGroups = ({
     [removedEmails],
   )
 
-  const activeEmails = useMemo(
-    () => mergedEmails.filter((email) => !removedEmailSet.has(email)),
-    [mergedEmails, removedEmailSet],
-  )
+  const activeEmails = useMemo(() => {
+    if (removedEmailSet.size === 0) {
+      return mergedEmails
+    }
+
+    return mergedEmails.filter((email) => {
+      const normalized = normalizeEmail(email)
+      if (!normalized) {
+        return true
+      }
+
+      return !removedEmailSet.has(normalized)
+    })
+  }, [mergedEmails, removedEmailSet])
 
   const activeEmailSet = useMemo(() => {
-    return new Set(activeEmails.map((email) => email.toLowerCase()))
+    const normalizedSet = new Set()
+    for (const email of activeEmails) {
+      const normalized = normalizeEmail(email)
+      if (normalized) {
+        normalizedSet.add(normalized)
+      }
+    }
+    return normalizedSet
   }, [activeEmails])
 
   const adhocEmailSet = useMemo(() => new Set(adhocEmails), [adhocEmails])
@@ -150,7 +190,16 @@ const EmailGroups = ({
   useEffect(() => {
     setRemovedEmails((prev) => {
       if (prev.length === 0) return prev
-      const filtered = prev.filter((email) => mergedEmails.includes(email))
+
+      const normalizedMerged = new Set()
+      for (const email of mergedEmails) {
+        const normalized = normalizeEmail(email)
+        if (normalized) {
+          normalizedMerged.add(normalized)
+        }
+      }
+
+      const filtered = prev.filter((email) => normalizedMerged.has(email))
       return filtered.length === prev.length ? prev : filtered
     })
   }, [mergedEmails])
@@ -255,9 +304,21 @@ const EmailGroups = ({
       if (adhocEmailSet.has(email)) {
         setAdhocEmails((prev) => prev.filter((item) => item !== email))
         setRemovedManualEmails((prev) => (prev.includes(email) ? prev : [...prev, email]))
-      } else {
-        setRemovedEmails((prev) => (prev.includes(email) ? prev : [...prev, email]))
+        return
       }
+
+      if (typeof email !== 'string') {
+        return
+      }
+
+      const normalizedEmail = normalizeEmail(email)
+      if (!normalizedEmail) {
+        return
+      }
+
+      setRemovedEmails((prev) =>
+        prev.includes(normalizedEmail) ? prev : [...prev, normalizedEmail],
+      )
     },
     [adhocEmailSet, setAdhocEmails, setRemovedEmails, setRemovedManualEmails],
   )
@@ -277,15 +338,15 @@ const EmailGroups = ({
   const handleAddContactEmail = useCallback(
     (email) => {
       if (!addAdhocEmail) return
-      const normalizedEmail = email?.trim()
+      const cleanedEmail = email?.trim()
 
-      if (!normalizedEmail) {
+      if (!cleanedEmail) {
         toast.error('No email address available for this contact')
         return
       }
 
-      const result = addAdhocEmail(normalizedEmail)
-      notifyAdhocEmailResult(normalizedEmail, result)
+      const result = addAdhocEmail(cleanedEmail)
+      notifyAdhocEmailResult(cleanedEmail, result)
     },
     [addAdhocEmail],
   )
@@ -494,7 +555,7 @@ const EmailGroups = ({
               {filteredContacts.length > 0 ? (
                 filteredContacts.map((contact) => {
                   const trimmedEmail = contact.email?.trim()
-                  const normalizedEmail = trimmedEmail?.toLowerCase()
+                  const normalizedEmail = normalizeEmail(trimmedEmail)
                   const isAlreadyAdded = normalizedEmail
                     ? activeEmailSet.has(normalizedEmail)
                     : false

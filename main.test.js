@@ -74,6 +74,29 @@ describe('watchExcelFiles', () => {
     vi.useFakeTimers()
   })
 
+  it('reloads both caches when both files change back-to-back', async () => {
+    vi.useRealTimers()
+    const sendSpy = vi.fn()
+    main.__setWin({ webContents: { send: sendSpy } })
+    main.__setCachedData({ emailData: ['stale-email'], contactData: ['stale-contact'] })
+
+    const cleanup = main.watchExcelFiles(fakeWatcher)
+
+    handlerMap.change(groupsPath)
+    handlerMap.change(contactsPath)
+
+    await new Promise((resolve) => setTimeout(resolve, 400))
+
+    const cached = main.getCachedData()
+    expect(cached.emailData).not.toEqual(['stale-email'])
+    expect(cached.contactData).not.toEqual(['stale-contact'])
+    expect(sendSpy).toHaveBeenCalledTimes(1)
+    expect(sendSpy).toHaveBeenCalledWith('excel-data-updated', cached)
+
+    cleanup()
+    vi.useFakeTimers()
+  })
+
   it('returns a cleanup function that closes the watcher', () => {
     const cleanup = main.watchExcelFiles(fakeWatcher)
     cleanup()

@@ -312,6 +312,12 @@ function watchExcelFiles(testWatcher) {
       return
     }
 
+    if (changeFlushTimer) {
+      clearTimeout(changeFlushTimer)
+      changeFlushTimer = null
+    }
+    pendingChangedPaths.clear()
+
     const closingWatcher = watcher
     watcher = null
     Promise.resolve(closingWatcher.close()).catch((error) => {
@@ -319,9 +325,37 @@ function watchExcelFiles(testWatcher) {
     })
   }
 
-  const debouncedOnChange = debounce((filePath) => {
-    console.log(`File changed: ${filePath}`)
-    loadExcelFiles(filePath)
+  const pendingChangedPaths = new Set()
+  const UNKNOWN_CHANGE = Symbol('unknown-change')
+  let changeFlushTimer = null
+
+  const flushPendingChanges = () => {
+    changeFlushTimer = null
+
+    if (pendingChangedPaths.size === 0) {
+      return
+    }
+
+    const hasGroupsChange = pendingChangedPaths.has(normalizedGroupsPath)
+    const hasContactsChange = pendingChangedPaths.has(normalizedContactsPath)
+    const hasUnknownChange = pendingChangedPaths.has(UNKNOWN_CHANGE)
+    pendingChangedPaths.clear()
+
+    const shouldReloadBoth = hasUnknownChange || (hasGroupsChange && hasContactsChange)
+    const targetPath = shouldReloadBoth
+      ? undefined
+      : hasGroupsChange
+        ? groupsPath
+        : hasContactsChange
+          ? contactsPath
+          : undefined
+
+    const logTarget = shouldReloadBoth
+      ? 'multiple Excel files'
+      : targetPath || 'an unknown Excel file'
+    console.log(`File changed: ${logTarget}`)
+
+    loadExcelFiles(targetPath)
       .then((result) => {
         if (result?.didUpdate) {
           sendExcelUpdate()
@@ -330,7 +364,26 @@ function watchExcelFiles(testWatcher) {
       .catch((error) => {
         console.error('Failed to reload Excel data after change:', error)
       })
-  }, DEBOUNCE_DELAY)
+  }
+
+  const scheduleChangeFlush = () => {
+    if (changeFlushTimer) {
+      return
+    }
+
+    changeFlushTimer = setTimeout(flushPendingChanges, DEBOUNCE_DELAY)
+  }
+
+  const onChangeOrAdd = (filePath) => {
+    const normalizedPath = normalizePath(filePath)
+    if (normalizedPath) {
+      pendingChangedPaths.add(normalizedPath)
+    } else {
+      pendingChangedPaths.add(UNKNOWN_CHANGE)
+    }
+
+    scheduleChangeFlush()
+  }
 
   const debouncedOnUnlink = debounce((filePath) => {
     console.log(`File deleted: ${filePath}`)
@@ -362,8 +415,8 @@ function watchExcelFiles(testWatcher) {
     cleanup()
   }
 
-  watcher.on('change', debouncedOnChange)
-  watcher.on('add', debouncedOnChange)
+  watcher.on('change', onChangeOrAdd)
+  watcher.on('add', onChangeOrAdd)
   watcher.on('unlink', debouncedOnUnlink)
   watcher.on('error', onError)
 

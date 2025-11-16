@@ -17,7 +17,7 @@ import { buildIndexedContacts } from '../utils/contactIndex'
  * @param {Object} props
  * @param {Array} props.emailData - Raw group data from Excel.
  * @param {string[]} props.adhocEmails - Manually added emails.
- * @param {string[]} props.selectedGroups - Currently selected group names.
+ * @param {string[]} props.selectedGroups - Currently selected group IDs.
  * @param {Function} props.setSelectedGroups - Setter for group selection.
  * @param {Function} props.setAdhocEmails - Setter for ad-hoc emails.
  */
@@ -63,6 +63,8 @@ const EmailGroups = ({
         return
       }
 
+      const id = `${columnIndex}:${label}`
+
       const emails = []
       for (const row of rows) {
         if (!Array.isArray(row)) {
@@ -81,11 +83,12 @@ const EmailGroups = ({
       }
 
       nextGroups.push({
+        id,
         name: label,
         emails,
         _search: normalizeSearchText(label),
       })
-      nextGroupMap.set(label, emails)
+      nextGroupMap.set(id, emails)
     })
 
     return { groups: nextGroups, groupMap: nextGroupMap }
@@ -97,7 +100,7 @@ const EmailGroups = ({
         return prev
       }
 
-      const filtered = prev.filter((name) => groupMap.has(name))
+      const filtered = prev.filter((groupId) => groupMap.has(groupId))
       return filtered.length === prev.length ? prev : filtered
     })
   }, [groupMap, setSelectedGroups])
@@ -127,7 +130,7 @@ const EmailGroups = ({
   }, [contactSearchTerm, indexedContacts])
 
   const mergedEmails = useMemo(() => {
-    const all = selectedGroups.flatMap((name) => groupMap.get(name) || [])
+    const all = selectedGroups.flatMap((groupId) => groupMap.get(groupId) || [])
     return [...new Set([...all, ...adhocEmails])]
   }, [selectedGroups, groupMap, adhocEmails])
 
@@ -156,9 +159,11 @@ const EmailGroups = ({
   }, [mergedEmails])
 
   const toggleSelect = useCallback(
-    (name) => {
+    (groupId) => {
       setSelectedGroups((prev) =>
-        prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name],
+        prev.includes(groupId)
+          ? prev.filter((id) => id !== groupId)
+          : [...prev, groupId],
       )
     },
     [setSelectedGroups],
@@ -373,10 +378,10 @@ const EmailGroups = ({
           <div className="group-grid">
             {filteredGroups.map((group) => (
               <button
-                key={group.name}
-                onClick={() => toggleSelect(group.name)}
+                key={group.id}
+                onClick={() => toggleSelect(group.id)}
                 className={`list-item-button ${
-                  selectedGroupSet.has(group.name) ? 'is-selected' : ''
+                  selectedGroupSet.has(group.id) ? 'is-selected' : ''
                 }`}
               >
                 <span>{group.name}</span>

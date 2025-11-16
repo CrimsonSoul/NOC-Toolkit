@@ -11,6 +11,11 @@ const sampleData = [
   ['a2@example.com', '']
 ]
 
+const duplicateHeaderData = [
+  ['Ops', 'Ops'],
+  ['ops-east@example.com', 'ops-west@example.com']
+]
+
 const sampleContacts = [
   { Name: 'Alex Johnson', Email: 'alex@example.com', Phone: '123-456-7890' },
   { Name: 'Bianca Rivers', Email: 'bianca@example.com' },
@@ -36,6 +41,33 @@ describe('EmailGroups', () => {
     const groupBButton = screen.getByRole('button', { name: /Group B/i })
     expect(groupAButton).toHaveTextContent(/2\s+contacts/i)
     expect(groupBButton).toHaveTextContent(/1\s+contact/i)
+  })
+
+  it('distinguishes between groups that share the same label', async () => {
+    const user = userEvent.setup()
+
+    function Wrapper() {
+      const [selected, setSelected] = useState([])
+      return (
+        <EmailGroups
+          emailData={duplicateHeaderData}
+          adhocEmails={[]}
+          selectedGroups={selected}
+          setSelectedGroups={setSelected}
+          setAdhocEmails={() => {}}
+          contactData={sampleContacts}
+          addAdhocEmail={() => 'added'}
+        />
+      )
+    }
+
+    render(<Wrapper />)
+    const duplicateButtons = screen.getAllByRole('button', { name: /Ops/i })
+    expect(duplicateButtons).toHaveLength(2)
+
+    await user.click(duplicateButtons[0])
+    expect(duplicateButtons[0]).toHaveClass('is-selected')
+    expect(duplicateButtons[1]).not.toHaveClass('is-selected')
   })
 
   it('allows selecting groups and clearing all', async () => {

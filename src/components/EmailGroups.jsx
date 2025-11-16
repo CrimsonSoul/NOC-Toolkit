@@ -127,8 +127,24 @@ const EmailGroups = ({
   }, [contactSearchTerm, indexedContacts])
 
   const mergedEmails = useMemo(() => {
+    const normalizedSet = new Set()
+    const merged = []
     const all = selectedGroups.flatMap((name) => groupMap.get(name) || [])
-    return [...new Set([...all, ...adhocEmails])]
+    const combined = [...all, ...adhocEmails]
+
+    for (const email of combined) {
+      const normalized = typeof email === 'string' ? email.toLowerCase() : email
+      if (normalized == null) {
+        continue
+      }
+
+      if (!normalizedSet.has(normalized)) {
+        normalizedSet.add(normalized)
+        merged.push(email)
+      }
+    }
+
+    return merged
   }, [selectedGroups, groupMap, adhocEmails])
 
   const removedEmailSet = useMemo(
@@ -142,7 +158,13 @@ const EmailGroups = ({
   )
 
   const activeEmailSet = useMemo(() => {
-    return new Set(activeEmails.map((email) => email.toLowerCase()))
+    const normalizedSet = new Set()
+    for (const email of activeEmails) {
+      if (typeof email === 'string') {
+        normalizedSet.add(email.toLowerCase())
+      }
+    }
+    return normalizedSet
   }, [activeEmails])
 
   const adhocEmailSet = useMemo(() => new Set(adhocEmails), [adhocEmails])

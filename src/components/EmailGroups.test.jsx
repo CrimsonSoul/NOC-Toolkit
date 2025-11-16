@@ -147,4 +147,26 @@ describe('EmailGroups', () => {
     const disabledButton = await screen.findByRole('button', { name: /Already Added/i })
     expect(disabledButton).toBeDisabled()
   })
+
+  it('deduplicates emails regardless of casing', () => {
+    render(
+      <EmailGroups
+        emailData={[
+          ['Dup Group'],
+          ['Test@example.com'],
+          ['test@example.com'],
+        ]}
+        adhocEmails={[]}
+        selectedGroups={['Dup Group']}
+        setSelectedGroups={() => {}}
+        setAdhocEmails={() => {}}
+        contactData={[]}
+        addAdhocEmail={() => {}}
+      />
+    )
+
+    const chips = screen.getAllByRole('listitem')
+    expect(chips).toHaveLength(1)
+    expect(screen.getByText('Test@example.com')).toBeInTheDocument()
+  })
 })

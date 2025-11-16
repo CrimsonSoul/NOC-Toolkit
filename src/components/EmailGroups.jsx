@@ -11,15 +11,7 @@ import { toast } from 'react-hot-toast'
 import { normalizeSearchText } from '../utils/normalizeText'
 import { notifyAdhocEmailResult } from '../utils/notifyAdhocEmailResult'
 import { buildIndexedContacts } from '../utils/contactIndex'
-
-const normalizeEmail = (email) => {
-  if (typeof email !== 'string') {
-    return null
-  }
-
-  const trimmed = email.trim()
-  return trimmed ? trimmed.toLowerCase() : null
-}
+import { normalizeEmail } from '../utils/normalizeEmail'
 
 /**
  * Manage selection of email groups and creation of merged mailing lists.

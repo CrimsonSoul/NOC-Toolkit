@@ -152,10 +152,19 @@ const EmailGroups = ({
     [removedEmails],
   )
 
-  const activeEmails = useMemo(
-    () => mergedEmails.filter((email) => !removedEmailSet.has(email)),
-    [mergedEmails, removedEmailSet],
-  )
+  const activeEmails = useMemo(() => {
+    if (removedEmailSet.size === 0) {
+      return mergedEmails
+    }
+
+    return mergedEmails.filter((email) => {
+      if (typeof email !== 'string') {
+        return true
+      }
+
+      return !removedEmailSet.has(email.toLowerCase())
+    })
+  }, [mergedEmails, removedEmailSet])
 
   const activeEmailSet = useMemo(() => {
     const normalizedSet = new Set()
@@ -172,7 +181,15 @@ const EmailGroups = ({
   useEffect(() => {
     setRemovedEmails((prev) => {
       if (prev.length === 0) return prev
-      const filtered = prev.filter((email) => mergedEmails.includes(email))
+
+      const normalizedMerged = new Set()
+      for (const email of mergedEmails) {
+        if (typeof email === 'string') {
+          normalizedMerged.add(email.toLowerCase())
+        }
+      }
+
+      const filtered = prev.filter((email) => normalizedMerged.has(email))
       return filtered.length === prev.length ? prev : filtered
     })
   }, [mergedEmails])
@@ -277,9 +294,17 @@ const EmailGroups = ({
       if (adhocEmailSet.has(email)) {
         setAdhocEmails((prev) => prev.filter((item) => item !== email))
         setRemovedManualEmails((prev) => (prev.includes(email) ? prev : [...prev, email]))
-      } else {
-        setRemovedEmails((prev) => (prev.includes(email) ? prev : [...prev, email]))
+        return
       }
+
+      if (typeof email !== 'string') {
+        return
+      }
+
+      const normalizedEmail = email.toLowerCase()
+      setRemovedEmails((prev) =>
+        prev.includes(normalizedEmail) ? prev : [...prev, normalizedEmail],
+      )
     },
     [adhocEmailSet, setAdhocEmails, setRemovedEmails, setRemovedManualEmails],
   )

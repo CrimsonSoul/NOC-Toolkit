@@ -169,4 +169,38 @@ describe('EmailGroups', () => {
     expect(chips).toHaveLength(1)
     expect(screen.getByText('Test@example.com')).toBeInTheDocument()
   })
+
+  it('persists removals even if the email returns with different casing', async () => {
+    const user = userEvent.setup()
+
+    function Wrapper() {
+      const [selected, setSelected] = useState(['Upper Dup', 'Lower Dup'])
+      return (
+        <EmailGroups
+          emailData={[
+            ['Upper Dup', 'Lower Dup'],
+            ['Test@example.com', 'test@example.com'],
+          ]}
+          adhocEmails={[]}
+          selectedGroups={selected}
+          setSelectedGroups={setSelected}
+          setAdhocEmails={() => {}}
+          contactData={[]}
+          addAdhocEmail={() => {}}
+        />
+      )
+    }
+
+    render(<Wrapper />)
+
+    const chip = screen.getByRole('listitem', { name: /test@example.com/i })
+    await user.click(chip)
+
+    expect(screen.queryByRole('listitem', { name: /test@example.com/i })).not.toBeInTheDocument()
+
+    const upperButton = screen.getByRole('button', { name: /Upper Dup/i })
+    await user.click(upperButton)
+
+    expect(screen.queryByRole('listitem', { name: /test@example.com/i })).not.toBeInTheDocument()
+  })
 })

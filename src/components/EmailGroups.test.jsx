@@ -189,7 +189,7 @@ describe('EmailGroups', () => {
           ['test@example.com'],
         ]}
         adhocEmails={[]}
-        selectedGroups={['Dup Group']}
+        selectedGroups={['0:Dup Group']}
         setSelectedGroups={() => {}}
         setAdhocEmails={() => {}}
         contactData={[]}
@@ -206,7 +206,7 @@ describe('EmailGroups', () => {
     const user = userEvent.setup()
 
     function Wrapper() {
-      const [selected, setSelected] = useState(['Upper Dup', 'Lower Dup'])
+      const [selected, setSelected] = useState(['0:Upper Dup', '1:Lower Dup'])
       return (
         <EmailGroups
           emailData={[

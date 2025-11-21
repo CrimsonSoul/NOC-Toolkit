@@ -133,7 +133,17 @@ const EmailGroups = ({
 
   const mergedEmails = useMemo(() => {
     const all = selectedGroups.flatMap((groupId) => groupMap.get(groupId) || [])
-    return [...new Set([...all, ...adhocEmails])]
+    const combined = [...all, ...adhocEmails]
+    const unique = new Map()
+
+    for (const email of combined) {
+      const normalized = normalizeEmail(email)
+      if (normalized && !unique.has(normalized)) {
+        unique.set(normalized, email)
+      }
+    }
+
+    return Array.from(unique.values())
   }, [selectedGroups, groupMap, adhocEmails])
 
   const removedEmailSet = useMemo(

@@ -50,6 +50,12 @@ const EmailGroups = ({
       return { groups: [], groupMap: new Map() }
     }
 
+    // Handle potential empty or malformed data gracefully
+    // Some Excel parsers might return empty rows or odd structures
+    if (emailData.length < 1) {
+        return { groups: [], groupMap: new Map() }
+    }
+
     const [headers = [], ...rows] = emailData
 
     if (!Array.isArray(headers) || headers.length === 0) {
@@ -440,7 +446,9 @@ const EmailGroups = ({
             ))}
           </div>
         ) : (
-          <div className="empty-state">No groups match your search.</div>
+          <div className="empty-state">
+            {groups.length === 0 ? 'No email groups loaded. Please check groups.xlsx.' : 'No groups match your search.'}
+          </div>
         )}
 
       </div>

@@ -1,70 +1,13 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron')
-const path = require('path')
-const fs = require('fs')
-const crypto = require('crypto')
-const chokidar = require('chokidar')
-const xlsx = require('xlsx')
+const { app, BrowserWindow } = require('electron')
+const log = require('electron-log')
+const { loadExcelFiles, watchExcelFiles, closeWatcher } = require('./src/main/excel')
+const { createWindow, setupApplicationMenu, getWin, __setWin } = require('./src/main/window')
+const { setupIpcHandlers, pendingAuthRequests } = require('./src/main/ipc')
 
-// Base directory where Excel files live. In production this is next to the executable.
-const basePath = app.isPackaged ? path.dirname(process.execPath) : __dirname
+// Initialize logger
+log.transports.file.level = 'info'
+log.transports.console.level = 'info'
 
-const EXCEL_FILE_NAMES = {
-  groups: 'groups.xlsx',
-  contacts: 'contacts.xlsx',
-}
-
-const ALLOWED_EXCEL_FILENAMES = new Set(Object.values(EXCEL_FILE_NAMES))
-
-let win
-let watcher
-let cachedData = { emailData: [], contactData: [] }
-const workbookSignatures = { groups: null, contacts: null }
-const isMac = process.platform === 'darwin'
-
-const normalizePath = (filePath) => {
-  if (typeof filePath !== 'string' || filePath.length === 0) {
-    return null
-  }
-
-  try {
-    const resolved = path.resolve(filePath)
-    return process.platform === 'win32' ? resolved.toLowerCase() : resolved
-  } catch (error) {
-    console.warn('Unable to normalize path:', filePath, error)
-    return null
-  }
-}
-
-/**
- * Resolve an icon path for the application window if one exists.
- *
- * Electron expects the icon file to live alongside the executable in
- * production, but during development we keep the assets in the repo.
- * Some environments only provide an `.ico` file while others expect a
- * `.png`, so we search through a list of sensible locations and return
- * the first match. Returning `undefined` allows Electron to fall back to
- * its default icon instead of throwing an error when a custom icon is
- * missing.
- */
-function resolveWindowIcon() {
-  const candidatePaths = [
-    path.join(basePath, 'icon.png'),
-    path.join(basePath, 'icon.ico'),
-    path.join(__dirname, 'public', 'icon.png'),
-    path.join(__dirname, 'public', 'icon.ico'),
-  ]
-
-  for (const candidate of candidatePaths) {
-    if (fs.existsSync(candidate)) {
-      return candidate
-    }
-  }
-
-  return undefined
-}
-
-const DEBOUNCE_DELAY = 250
-const pendingAuthRequests = new Map()
 let authRequestIdCounter = 0
 
 const isDestroyed = (entity) =>
@@ -488,43 +431,9 @@ function createWindow() {
     win = null
   })
 
-  if (app.isPackaged) {
-    win.loadFile(path.join(__dirname, 'dist', 'index.html'))
-  } else {
-    win.loadURL('http://localhost:5173/')
-  }
-
-  win.once('ready-to-show', () => {
-    win.show()
-    sendExcelUpdate()
+  process.on('unhandledRejection', (reason) => {
+    log.error('Unhandled Rejection in Main Process:', reason)
   })
-}
-
-function cleanupAuthRequestsForContents(contentsId) {
-  for (const [id, entry] of pendingAuthRequests.entries()) {
-    if (entry.contentsId === contentsId) {
-      try {
-        entry.callback()
-      } catch (error) {
-        console.error('Failed to cancel authentication request:', error)
-      }
-      pendingAuthRequests.delete(id)
-    }
-  }
-}
-
-function handleRadarCacheRefresh() {
-  const contents = getActiveWebContents()
-  if (!contents) {
-    return
-  }
-
-  const { session } = contents
-
-  if (!session) {
-    console.warn('Unable to clear radar cache: no active session found')
-    return
-  }
 
   const clearCachePromise = session.clearCache()
   const clearStoragePromise = session
@@ -644,7 +553,17 @@ if (process.env.NODE_ENV !== 'test') {
 
   app.on('web-contents-created', (_event, contents) => {
     contents.on('destroyed', () => {
-      cleanupAuthRequestsForContents(contents.id)
+      // Cleanup auth requests
+      for (const [id, entry] of pendingAuthRequests.entries()) {
+        if (entry.contentsId === contents.id) {
+          try {
+            entry.callback()
+          } catch (error) {
+            log.error('Failed to cancel authentication request:', error)
+          }
+          pendingAuthRequests.delete(id)
+        }
+      }
     })
   })
 
@@ -686,7 +605,7 @@ if (process.env.NODE_ENV !== 'test') {
     try {
       webContents.send('auth-challenge', payload)
     } catch (error) {
-      console.error('Failed to forward authentication challenge:', error)
+      log.error('Failed to forward authentication challenge:', error)
       pendingAuthRequests.delete(requestId)
       callback()
     }
@@ -695,16 +614,22 @@ if (process.env.NODE_ENV !== 'test') {
   app.whenReady().then(async () => {
     createWindow()
     setupApplicationMenu()
-    await loadExcelFiles()
+    setupIpcHandlers()
+    const { sendExcelUpdate } = require('./src/main/excel')
+
+    // Load initial data and update window
+    await loadExcelFiles().then(() => {
+        sendExcelUpdate()
+    })
+
     watchExcelFiles()
 
     app.on('activate', async () => {
       if (BrowserWindow.getAllWindows().length === 0) {
         createWindow()
-        if (!watcher) {
-          await loadExcelFiles()
-          watchExcelFiles()
-        }
+        // Re-initialize watcher if needed
+        await loadExcelFiles()
+        watchExcelFiles()
       }
     })
   })
@@ -714,55 +639,13 @@ if (process.env.NODE_ENV !== 'test') {
   })
 
   app.on('will-quit', () => {
-    if (watcher) {
-      watcher.close()
-    }
-  })
-
-  ipcMain.handle('load-excel-data', async () => cachedData)
-
-  ipcMain.on('open-excel-file', (_event, filename) => {
-    openExcelFile(filename)
-  })
-
-  ipcMain.handle('open-external-link', async (_event, url) => {
-    await safeOpenExternalLink(url)
-  })
-
-  ipcMain.handle('auth-provide-credentials', async (_event, payload = {}) => {
-    const { id, username, password, cancel } = payload
-
-    if (typeof id !== 'number' || !pendingAuthRequests.has(id)) {
-      return { status: 'error', message: 'Authentication request not found.' }
-    }
-
-    const entry = pendingAuthRequests.get(id)
-    pendingAuthRequests.delete(id)
-
-    try {
-      if (cancel || !username) {
-        entry.callback()
-        return { status: 'cancelled' }
-      }
-
-      entry.callback(username, password ?? '')
-      return { status: 'ok' }
-    } catch (error) {
-      console.error('Failed to resolve authentication request:', error)
-      return { status: 'error', message: error?.message || String(error) }
-    }
+    closeWatcher()
   })
 }
 
+// Exports for testing purposes or access from other modules if needed
 module.exports = {
   watchExcelFiles,
   loadExcelFiles,
-  __setWin: (w) => (win = w),
-  __setCachedData: (data) => {
-    cachedData = data
-    workbookSignatures.groups = null
-    workbookSignatures.contacts = null
-  },
-  getCachedData: () => cachedData,
-  __testables: { loadExcelFiles, sendExcelUpdate, safeOpenExternalLink, openExcelFile },
+  __setWin: (w) => __setWin(w),
 }

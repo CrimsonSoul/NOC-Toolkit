@@ -1,4 +1,5 @@
 import React from 'react'
+import { toast } from 'react-hot-toast'
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -11,7 +12,9 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('ErrorBoundary caught an error', error, errorInfo)
+    console.error('Uncaught error in UI:', error, errorInfo)
+    // In a real production app, you'd send this to a logging service (e.g., Sentry)
+    // or use the electron-log IPC bridge if exposed.
   }
 
   handleReload = () => {

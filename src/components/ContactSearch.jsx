@@ -267,13 +267,15 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
   }, [filtered, columnCount, updateListHeightEstimate])
 
   const rows = useMemo(() => {
-    if (columnCount <= 1) {
+    // If column count is 0 or negative, default to 1 to avoid infinite loops or crashes
+    const safeColumns = Math.max(1, columnCount);
+    if (safeColumns <= 1) {
       return filtered.map((contact) => [contact])
     }
 
     const chunked = []
-    for (let i = 0; i < filtered.length; i += columnCount) {
-      chunked.push(filtered.slice(i, i + columnCount))
+    for (let i = 0; i < filtered.length; i += safeColumns) {
+      chunked.push(filtered.slice(i, i + safeColumns))
     }
     return chunked
   }, [filtered, columnCount])
@@ -554,25 +556,27 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
                           <article className="contact-card" role="listitem">
                             <div className="contact-card__header">
                               <div className="contact-card__avatar">{initials}</div>
-                              <div>
-                                <h3 className="contact-card__name">{displayName}</h3>
-                                {raw?.Title && <p className="contact-card__title">{raw.Title}</p>}
+                              <div style={{ minWidth: 0 }}>
+                                <h3 className="contact-card__name" title={displayName}>{displayName}</h3>
+                                {raw?.Title && <p className="contact-card__title" title={raw.Title}>{raw.Title}</p>}
                               </div>
                             </div>
 
-                            <div className="contact-card__row">
-                              <span className="label">Email</span>
-                              {email ? (
-                                <a href={`mailto:${email}`} style={{ whiteSpace: 'nowrap' }}>
-                                  {email}
-                                </a>
-                              ) : (
-                                <span>N/A</span>
-                              )}
-                            </div>
-                            <div className="contact-card__row">
-                              <span className="label">Phone</span>
-                              <span>{formattedPhone || 'N/A'}</span>
+                            <div className="contact-card__body">
+                              <div className="contact-card__row">
+                                <span className="label">Email</span>
+                                {email ? (
+                                  <a href={`mailto:${email}`} title={email}>
+                                    {email}
+                                  </a>
+                                ) : (
+                                  <span>N/A</span>
+                                )}
+                              </div>
+                              <div className="contact-card__row">
+                                <span className="label">Phone</span>
+                                <span>{formattedPhone || 'N/A'}</span>
+                              </div>
                             </div>
 
                             <div className="contact-card__actions">

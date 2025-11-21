@@ -16,20 +16,36 @@ require.cache[electronPath] = {
   },
 }
 
-const { loadExcelFiles, getCachedData, __setCachedData } = require('./main.js')
+// Mock electron-log
+const logStub = {
+  warn: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+  transports: { file: {}, console: {} }
+}
+require.cache[require.resolve('electron-log')] = { exports: logStub }
+
+const { loadExcelFiles, getCachedData, __setCachedData } = require('../../src/main/excel.js')
+const { setBasePath } = require('../../src/main/utils.js')
+
+// Force basePath to be the test directory
+setBasePath(__dirname)
 
 const groupsPath = path.join(__dirname, 'groups.xlsx')
 const contactsPath = path.join(__dirname, 'contacts.xlsx')
-const originalGroups = fs.readFileSync(groupsPath)
-const originalContacts = fs.readFileSync(contactsPath)
+const originalGroups = fs.existsSync(groupsPath) ? fs.readFileSync(groupsPath) : Buffer.from('')
+const originalContacts = fs.existsSync(contactsPath) ? fs.readFileSync(contactsPath) : Buffer.from('')
 
 afterAll(() => {
-  fs.writeFileSync(groupsPath, originalGroups)
-  fs.writeFileSync(contactsPath, originalContacts)
+  if (originalGroups.length) fs.writeFileSync(groupsPath, originalGroups)
+  if (originalContacts.length) fs.writeFileSync(contactsPath, originalContacts)
 })
 
 describe('incremental Excel loading', () => {
   beforeEach(async () => {
+    vi.restoreAllMocks()
+    logStub.warn.mockClear()
+
     // Seed initial data for both files
     const groupWB = xlsx.utils.book_new()
     const groupSheet = xlsx.utils.aoa_to_sheet([['email'], ['initial@example.com']])
@@ -89,30 +105,26 @@ describe('incremental Excel loading', () => {
   it('retains cached data when groups file is missing', async () => {
     const initial = getCachedData()
     fs.unlinkSync(groupsPath)
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     await loadExcelFiles(groupsPath)
 
     const updated = getCachedData()
     expect(updated.emailData).toEqual(initial.emailData)
-    expect(warnSpy).toHaveBeenCalledWith(
+    expect(logStub.warn).toHaveBeenCalledWith(
       expect.stringContaining('groups.xlsx not found')
     )
-    warnSpy.mockRestore()
   })
 
   it('retains cached data when contacts file is missing', async () => {
     const initial = getCachedData()
     fs.unlinkSync(contactsPath)
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     await loadExcelFiles(contactsPath)
 
     const updated = getCachedData()
     expect(updated.contactData).toEqual(initial.contactData)
-    expect(warnSpy).toHaveBeenCalledWith(
+    expect(logStub.warn).toHaveBeenCalledWith(
       expect.stringContaining('contacts.xlsx not found')
     )
-    warnSpy.mockRestore()
   })
 })

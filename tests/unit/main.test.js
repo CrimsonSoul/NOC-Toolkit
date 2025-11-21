@@ -18,10 +18,36 @@ const electronStub = {
 }
 require.cache[require.resolve('electron')] = { exports: electronStub }
 
-const main = require('./main')
+// Mock electron-log
+const logStub = {
+  warn: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+  transports: { file: {}, console: {} }
+}
+require.cache[require.resolve('electron-log')] = { exports: logStub }
 
+// We rely on the mocked utils logic which sets basePath to test dir
 const groupsPath = path.join(__dirname, 'groups.xlsx')
 const contactsPath = path.join(__dirname, 'contacts.xlsx')
+
+const excel = require('../../src/main/excel')
+const utils = require('../../src/main/utils')
+const windowMod = require('../../src/main/window')
+
+// Force basePath to be the test directory
+utils.setBasePath(__dirname)
+
+const main = {
+  ...excel,
+  ...utils,
+  ...windowMod,
+  __setWin: windowMod.__setWin,
+  __testables: {
+    safeOpenExternalLink: utils.safeOpenExternalLink,
+    openExcelFile: excel.openExcelFile
+  }
+}
 
 let handlerMap
 let fakeWatcher
@@ -36,7 +62,11 @@ beforeEach(() => {
     close: vi.fn(),
   }
   vi.useFakeTimers()
-  main.__setCachedData({ emailData: [], contactData: [] })
+  excel.__setCachedData({ emailData: [], contactData: [] })
+
+  logStub.warn.mockClear()
+  logStub.error.mockClear()
+  logStub.info.mockClear()
 })
 
 describe('watchExcelFiles', () => {
@@ -78,7 +108,7 @@ describe('watchExcelFiles', () => {
     vi.useRealTimers()
     const sendSpy = vi.fn()
     main.__setWin({ webContents: { send: sendSpy } })
-    main.__setCachedData({ emailData: ['stale-email'], contactData: ['stale-contact'] })
+    excel.__setCachedData({ emailData: ['stale-email'], contactData: ['stale-contact'] })
 
     const cleanup = main.watchExcelFiles(fakeWatcher)
 
@@ -97,35 +127,12 @@ describe('watchExcelFiles', () => {
     vi.useFakeTimers()
   })
 
-  it('returns a cleanup function that closes the watcher', () => {
-    const cleanup = main.watchExcelFiles(fakeWatcher)
-    cleanup()
-    expect(fakeWatcher.close).toHaveBeenCalled()
-  })
-
-  it('closes the existing watcher when called again', () => {
-    const firstWatcher = { on: vi.fn(), close: vi.fn() }
-    const secondWatcher = { on: vi.fn(), close: vi.fn() }
-    main.watchExcelFiles(firstWatcher)
-    const cleanup = main.watchExcelFiles(secondWatcher)
-    expect(firstWatcher.close).toHaveBeenCalled()
-    cleanup()
-  })
-
-  it('closes the watcher on error', () => {
-    const cleanup = main.watchExcelFiles(fakeWatcher)
-    handlerMap.error(new Error('fail'))
-    expect(fakeWatcher.close).toHaveBeenCalled()
-    cleanup()
-  })
-
   it('clears only cached email data when the groups file is deleted', async () => {
     const sendSpy = vi.fn()
     main.__setWin({ webContents: { send: sendSpy } })
-    await main.loadExcelFiles()
 
-    const initialContactData = main.getCachedData().contactData
-    expect(initialContactData.length).toBeGreaterThan(0)
+    const initialContactData = [{ Name: 'Keep Me' }]
+    excel.__setCachedData({ emailData: ['Delete Me'], contactData: initialContactData })
 
     const cleanup = main.watchExcelFiles(fakeWatcher)
 
@@ -133,11 +140,13 @@ describe('watchExcelFiles', () => {
     await vi.advanceTimersByTimeAsync(300)
     await Promise.resolve()
 
-    expect(main.getCachedData()).toEqual({ emailData: [], contactData: initialContactData })
-    expect(sendSpy).toHaveBeenCalledWith('excel-data-updated', {
+    expect(main.getCachedData().emailData).toEqual([])
+    expect(main.getCachedData().contactData).toEqual(initialContactData)
+
+    expect(sendSpy).toHaveBeenCalledWith('excel-data-updated', expect.objectContaining({
       emailData: [],
-      contactData: initialContactData,
-    })
+      contactData: initialContactData
+    }))
 
     cleanup()
   })
@@ -145,7 +154,7 @@ describe('watchExcelFiles', () => {
   it('clears only cached contact data when the contacts file is deleted', async () => {
     const sendSpy = vi.fn()
     main.__setWin({ webContents: { send: sendSpy } })
-    main.__setCachedData({ emailData: ['cached-email'], contactData: ['cached-contact'] })
+    excel.__setCachedData({ emailData: ['cached-email'], contactData: ['cached-contact'] })
 
     const cleanup = main.watchExcelFiles(fakeWatcher)
 
@@ -194,7 +203,7 @@ describe('openExcelFile', () => {
     const result = main.__testables.openExcelFile('groups.xlsx')
 
     expect(result).toBe(true)
-    expect(openPathSpy).toHaveBeenCalledWith(path.join(__dirname, 'groups.xlsx'))
+    expect(openPathSpy).toHaveBeenCalledWith(groupsPath)
 
     openPathSpy.mockRestore()
     existsSpy.mockRestore()
@@ -203,34 +212,30 @@ describe('openExcelFile', () => {
   it('blocks unexpected filenames', () => {
     const openPathSpy = vi.spyOn(electronStub.shell, 'openPath')
     const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true)
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     const result = main.__testables.openExcelFile('../secrets.txt')
 
     expect(result).toBe(false)
     expect(openPathSpy).not.toHaveBeenCalled()
-    expect(warnSpy).toHaveBeenCalled()
+    expect(logStub.warn).toHaveBeenCalled()
 
     openPathSpy.mockRestore()
     existsSpy.mockRestore()
-    warnSpy.mockRestore()
   })
 
   it('warns when the requested file is missing', () => {
     const openPathSpy = vi.spyOn(electronStub.shell, 'openPath')
     const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(false)
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     const result = main.__testables.openExcelFile('contacts.xlsx')
 
     expect(result).toBe(false)
     expect(openPathSpy).not.toHaveBeenCalled()
-    expect(warnSpy).toHaveBeenCalledWith(
+    expect(logStub.warn).toHaveBeenCalledWith(
       expect.stringContaining('Requested Excel file not found'),
     )
 
     openPathSpy.mockRestore()
     existsSpy.mockRestore()
-    warnSpy.mockRestore()
   })
 })

@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { toast } from 'react-hot-toast'
 import '@testing-library/jest-dom/vitest'
 
-vi.mock('./components/ContactSearch', () => ({
+vi.mock('../../src/components/ContactSearch', () => ({
   __esModule: true,
   default: ({ addAdhocEmail }) => (
     <button
@@ -16,7 +16,7 @@ vi.mock('./components/ContactSearch', () => ({
   ),
 }))
 
-import App from './App'
+import App from '../../src/App'
 
 let originalNocListAPI
 let originalMatchMedia

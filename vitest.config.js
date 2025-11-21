@@ -5,5 +5,6 @@ module.exports = defineConfig({
   plugins: [react()],
   test: {
     environment: 'jsdom',
+    setupFiles: ['./src/setupTests.js'],
   },
 })

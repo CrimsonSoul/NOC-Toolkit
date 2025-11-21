@@ -12,6 +12,7 @@ import { normalizeSearchText } from '../utils/normalizeText'
 import { notifyAdhocEmailResult } from '../utils/notifyAdhocEmailResult'
 import { buildIndexedContacts } from '../utils/contactIndex'
 import { normalizeEmail } from '../utils/normalizeEmail'
+import VirtualContactList from './VirtualContactList'
 
 /**
  * Manage selection of email groups and creation of merged mailing lists.
@@ -534,61 +535,14 @@ const EmailGroups = ({
               </div>
             </div>
 
-            <div className="contact-picker__list minimal-scrollbar">
+            <div className="contact-picker__list minimal-scrollbar" style={{ display: 'flex', flexDirection: 'column' }}>
               {filteredContacts.length > 0 ? (
-                filteredContacts.map((contact) => {
-                  const trimmedEmail = contact.email?.trim()
-                  const normalizedEmail = normalizeEmail(trimmedEmail)
-                  const isAlreadyAdded = normalizedEmail
-                    ? activeEmailSet.has(normalizedEmail)
-                    : false
-
-                  return (
-                    <article key={contact.key} className="contact-picker__item">
-                      <div className="contact-picker__identity">
-                        <div className="contact-picker__avatar">{contact.initials}</div>
-                        <div>
-                          <h3 className="contact-picker__name">
-                            {contact.raw.Name || contact.email || 'Unknown'}
-                          </h3>
-                          {contact.raw.Title && (
-                            <p className="contact-picker__title">{contact.raw.Title}</p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="contact-picker__details">
-                        <div>
-                          <span className="label">Email</span>
-                          {trimmedEmail ? (
-                            <a href={`mailto:${trimmedEmail}`}>{trimmedEmail}</a>
-                          ) : (
-                            <span>Not available</span>
-                          )}
-                        </div>
-                        <div>
-                          <span className="label">Phone</span>
-                          <span>{contact.formattedPhone || 'Not available'}</span>
-                        </div>
-                      </div>
-                      <div className="contact-picker__actions">
-                        <button
-                          type="button"
-                          className="btn btn-outline btn-small"
-                          onClick={() => handleAddContactEmail(trimmedEmail)}
-                          disabled={
-                            typeof addAdhocEmail !== 'function' || !trimmedEmail || isAlreadyAdded
-                          }
-                        >
-                          {!trimmedEmail
-                            ? 'Email Unavailable'
-                            : isAlreadyAdded
-                              ? 'Already Added'
-                              : 'Add to List'}
-                        </button>
-                      </div>
-                    </article>
-                  )
-                })
+                <VirtualContactList
+                  contacts={filteredContacts}
+                  activeEmailSet={activeEmailSet}
+                  onAddEmail={handleAddContactEmail}
+                  addAdhocEmail={addAdhocEmail}
+                />
               ) : (
                 <div className="empty-state">No contacts match your search.</div>
               )}

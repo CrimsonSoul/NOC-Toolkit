@@ -132,6 +132,23 @@ function openExcelFile(filename) {
   return true
 }
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+const readFileWithRetry = async (filePath, attempts = 3, delay = 500) => {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fs.promises.readFile(filePath)
+    } catch (error) {
+      if (error.code === 'EBUSY' && i < attempts - 1) {
+        console.warn(`File locked, retrying in ${delay}ms: ${filePath}`)
+        await sleep(delay)
+        continue
+      }
+      throw error
+    }
+  }
+}
+
 const readWorkbookData = async ({
   filePath,
   sheetToJsonOptions,
@@ -148,7 +165,7 @@ const readWorkbookData = async ({
   }
 
   try {
-    const buffer = await fs.promises.readFile(filePath)
+    const buffer = await readFileWithRetry(filePath)
     const signature = crypto.createHash('sha1').update(buffer).digest('hex')
 
     if (signature && signature === fallbackSignature && fallback) {
@@ -457,7 +474,7 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
-      sandbox: false
+      sandbox: true
     }
   }
 
@@ -617,6 +634,14 @@ function setupApplicationMenu() {
 }
 
 if (process.env.NODE_ENV !== 'test') {
+  process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception in Main Process:', error)
+  })
+
+  process.on('unhandledRejection', (reason) => {
+    console.error('Unhandled Rejection in Main Process:', reason)
+  })
+
   app.on('web-contents-created', (_event, contents) => {
     contents.on('destroyed', () => {
       cleanupAuthRequestsForContents(contents.id)

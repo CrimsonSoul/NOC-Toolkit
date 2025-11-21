@@ -17,41 +17,23 @@ class ErrorBoundary extends React.Component {
     // or use the electron-log IPC bridge if exposed.
   }
 
+  handleReload = () => {
+    window.location.reload()
+  }
+
   render() {
     if (this.state.hasError) {
       return (
-        <div className="app-shell" style={{ alignItems: 'center', justifyContent: 'center' }}>
-          <div className="module-card text-center" style={{ maxWidth: '500px', padding: '2rem' }}>
+        <div className="error-boundary">
+          <div className="module-card">
             <h2>Something went wrong</h2>
-            <p className="text-muted">
-              The application encountered an unexpected error.
-            </p>
-            <div className="button-group" style={{ justifyContent: 'center', marginTop: '1rem' }}>
-              <button
-                className="btn btn-accent"
-                onClick={() => {
-                  this.setState({ hasError: false })
-                  window.location.reload()
-                }}
-              >
-                Reload Application
-              </button>
-            </div>
+            <p>An unexpected error occurred in the application interface.</p>
             {this.state.error && (
-                <pre style={{
-                    marginTop: '1.5rem',
-                    padding: '1rem',
-                    background: 'rgba(0,0,0,0.3)',
-                    borderRadius: '4px',
-                    textAlign: 'left',
-                    overflow: 'auto',
-                    maxHeight: '200px',
-                    fontSize: '0.85rem',
-                    color: 'var(--text-muted)'
-                }}>
-                    {this.state.error.toString()}
-                </pre>
+              <pre className="error-details">{this.state.error.toString()}</pre>
             )}
+            <button onClick={this.handleReload} className="btn btn-primary">
+              Reload Application
+            </button>
           </div>
         </div>
       )

@@ -1,6 +1,6 @@
 const { BrowserWindow, app, Menu, shell } = require('electron')
 const path = require('path')
-const { resolveWindowIcon, isDestroyed, getBasePath } = require('./utils')
+const { resolveWindowIcon, isDestroyed, getBasePath, safeOpenExternalLink } = require('./utils')
 const { sendExcelUpdate } = require('./excel')
 const log = require('electron-log')
 
@@ -157,6 +157,48 @@ function createWindow() {
   }
 
   win = new BrowserWindow(windowOptions)
+
+  const trustedOrigins = new Set(['file://'])
+  if (!app.isPackaged) {
+    trustedOrigins.add('http://localhost:5173')
+  }
+
+  const isTrustedUrl = (url) => {
+    try {
+      const parsed = new URL(url)
+
+      if (parsed.protocol === 'file:') {
+        return true
+      }
+
+      return trustedOrigins.has(parsed.origin)
+    } catch {
+      return false
+    }
+  }
+
+  const handleBlockedNavigation = (url, reason) => {
+    log.warn(`Blocked ${reason} to untrusted URL: ${url}`)
+    void safeOpenExternalLink(url)
+  }
+
+  win.webContents.on('will-navigate', (event, url) => {
+    if (isTrustedUrl(url)) {
+      return
+    }
+
+    event.preventDefault()
+    handleBlockedNavigation(url, 'navigation')
+  })
+
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (isTrustedUrl(url)) {
+      return { action: 'allow' }
+    }
+
+    handleBlockedNavigation(url, 'window open')
+    return { action: 'deny' }
+  })
 
   win.on('closed', () => {
     win = null

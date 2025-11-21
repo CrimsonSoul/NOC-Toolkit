@@ -6,9 +6,17 @@ let customBasePath = null
 
 function getBasePath() {
   if (customBasePath) return customBasePath
-  return app.isPackaged
-    ? path.dirname(process.execPath)
-    : path.resolve(__dirname, '..', '..')
+
+  if (app.isPackaged) {
+    try {
+      return app.getAppPath()
+    } catch (error) {
+      console.warn('Falling back to executable directory for base path:', error)
+      return path.dirname(process.execPath)
+    }
+  }
+
+  return path.resolve(__dirname, '..', '..')
 }
 
 function setBasePath(p) {

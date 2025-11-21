@@ -14,14 +14,4 @@ global.ResizeObserver = class ResizeObserver {
 }
 
 // Mock window.scrollTo
-if (typeof window !== 'undefined') {
-  window.scrollTo = vi.fn()
-  Element.prototype.getBoundingClientRect = () => ({
-    width: 800,
-    height: 600,
-    top: 0,
-    left: 0,
-    bottom: 600,
-    right: 800,
-  })
-}
+window.scrollTo = vi.fn()

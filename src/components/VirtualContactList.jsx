@@ -1,16 +1,17 @@
 import React, {
-  useMemo,
   useRef,
   useEffect,
   useCallback,
-  forwardRef,
   memo,
-  useState
+  useState,
+  useLayoutEffect,
 } from 'react'
 import { VariableSizeList } from 'react-window'
 import { normalizeEmail } from '../utils/normalizeEmail'
 
 const ROW_HEIGHT = 80 // Fixed height for simpler picker rows
+const DEFAULT_HEIGHT = 380
+const DEFAULT_WIDTH = 320
 
 /**
  * Virtualized list for the contact picker in EmailGroups.
@@ -23,26 +24,38 @@ const VirtualContactList = ({
 }) => {
   const listRef = useRef(null)
   const listContainerRef = useRef(null)
-  const [listHeight, setListHeight] = useState(400)
+  const [listHeight, setListHeight] = useState(DEFAULT_HEIGHT)
   const [listWidth, setListWidth] = useState(0)
 
   // Measure available space
+  const measure = useCallback(() => {
+    const container = listContainerRef.current
+    if (!container) return
+
+    const rect = container.getBoundingClientRect()
+    const width = rect.width || container.clientWidth || listWidth || DEFAULT_WIDTH
+    const height = rect.height || container.clientHeight || listHeight || DEFAULT_HEIGHT
+
+    setListWidth((prev) => (width > 0 ? width : prev || DEFAULT_WIDTH))
+    setListHeight((prev) => (height > 0 ? height : prev || DEFAULT_HEIGHT))
+  }, [listHeight, listWidth])
+
+  useLayoutEffect(() => {
+    measure()
+  }, [measure])
+
   useEffect(() => {
     const container = listContainerRef.current
     if (!container) return
 
-    const updateSize = () => {
-      const { width, height } = container.getBoundingClientRect()
-      setListWidth(width)
-      setListHeight(height)
-    }
+    const updateSize = () => measure()
 
     updateSize()
 
     const resizeObserver = new ResizeObserver(updateSize)
     resizeObserver.observe(container)
     return () => resizeObserver.disconnect()
-  }, [])
+  }, [contacts.length, measure])
 
   const ContactPickerRow = useCallback(({ index, style }) => {
     const contact = contacts[index]
@@ -100,18 +113,19 @@ const VirtualContactList = ({
   }, [contacts, activeEmailSet, onAddEmail, addAdhocEmail])
 
   return (
-    <div style={{ flex: 1, height: '100%', overflow: 'hidden' }} ref={listContainerRef}>
-      {listWidth > 0 && (
-        <VariableSizeList
-          ref={listRef}
-          height={listHeight}
-          width={listWidth}
-          itemCount={contacts.length}
-          itemSize={() => ROW_HEIGHT}
-        >
-          {ContactPickerRow}
-        </VariableSizeList>
-      )}
+    <div
+      style={{ flex: 1, height: '100%', minHeight: DEFAULT_HEIGHT, overflow: 'hidden' }}
+      ref={listContainerRef}
+    >
+      <VariableSizeList
+        ref={listRef}
+        height={listHeight}
+        width={Math.max(1, Math.round(listWidth || DEFAULT_WIDTH))}
+        itemCount={contacts.length}
+        itemSize={() => ROW_HEIGHT}
+      >
+        {ContactPickerRow}
+      </VariableSizeList>
     </div>
   )
 }

@@ -9,15 +9,6 @@ import AuthPrompt from './components/AuthPrompt'
 import { Toaster, toast } from 'react-hot-toast'
 import useRotatingCode from './hooks/useRotatingCode'
 
-const refreshTimestampFormatter = new Intl.DateTimeFormat(undefined, {
-  month: 'numeric',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-})
-
-const formatRefreshTimestamp = (date) => refreshTimestampFormatter.format(date)
-
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const VALID_TABS = new Set(['email', 'contact', 'radar'])
 
@@ -58,7 +49,6 @@ function App() {
   const [adhocEmails, setAdhocEmails] = useState([])
   const [emailData, setEmailData] = useState(EMPTY_EMAIL_DATA)
   const [contactData, setContactData] = useState(EMPTY_CONTACT_DATA)
-  const [lastRefresh, setLastRefresh] = useState('N/A')
   const [tab, setTabState] = useState(() => getStoredTabPreference() || 'email')
   const [radarMounted, setRadarMounted] = useState(tab === 'radar')
   const { currentCode, previousCode, progressKey, intervalMs } = useRotatingCode()
@@ -73,18 +63,16 @@ function App() {
     }
   }, [])
 
-  const updateExcelState = useCallback((payload, timestamp = new Date()) => {
+  const updateExcelState = useCallback((payload) => {
     const { emailData: nextEmailData, contactData: nextContactData } = sanitizeExcelPayload(payload)
 
     setEmailData((prev) => (prev === nextEmailData ? prev : nextEmailData))
     setContactData((prev) => (prev === nextContactData ? prev : nextContactData))
-    setLastRefresh(formatRefreshTimestamp(timestamp))
   }, [])
 
   const resetExcelState = useCallback(() => {
     setEmailData((prev) => (prev === EMPTY_EMAIL_DATA ? prev : EMPTY_EMAIL_DATA))
     setContactData((prev) => (prev === EMPTY_CONTACT_DATA ? prev : EMPTY_CONTACT_DATA))
-    setLastRefresh((prev) => (prev === 'N/A' ? prev : 'N/A'))
   }, [])
 
   /** Load group and contact data from the preloaded Excel files. */
@@ -98,7 +86,7 @@ function App() {
 
     try {
       const payload = await window.nocListAPI.loadExcelData()
-      updateExcelState(payload, new Date())
+      updateExcelState(payload)
       return true
     } catch (error) {
       console.error('Failed to load Excel data:', error)
@@ -119,7 +107,7 @@ function App() {
 
     const unsubscribe = window.nocListAPI.onExcelDataUpdate((data) => {
       toast.success('Excel files updated automatically!')
-      updateExcelState(data, new Date())
+      updateExcelState(data)
     })
 
     return () => unsubscribe?.()
@@ -341,10 +329,24 @@ function App() {
 
       <header className="app-header" ref={headerRef}>
         <div className="app-header-card">
-          <div className="app-header__cluster">
-            <span className="app-header__title" aria-label="NOC Toolkit">
-              NOC Toolkit
-            </span>
+          <div className="app-header__top">
+            <div className="app-header__cluster">
+              <span className="app-header__title" aria-label="NOC Toolkit">
+                NOC Toolkit
+              </span>
+            </div>
+            <div className="app-header__meta">
+              <Clock />
+              <button
+                onClick={refreshData}
+                className={`btn btn-ghost app-header__refresh${
+                  tab === 'radar' ? ' app-header__refresh--hidden' : ''
+                }`}
+                tabIndex={tab === 'radar' ? -1 : undefined}
+              >
+                Refresh
+              </button>
+            </div>
           </div>
           <div className="app-header__code">
             <CodeDisplay
@@ -353,22 +355,6 @@ function App() {
               progressKey={progressKey}
               intervalMs={intervalMs}
             />
-          </div>
-          <div className="app-header__status">
-            <Clock />
-            <div
-              className={`app-header__refresh${tab === 'radar' ? ' app-header__refresh--hidden' : ''}`}
-              aria-hidden={tab === 'radar'}
-            >
-              <button
-                onClick={refreshData}
-                className="btn btn-ghost"
-                tabIndex={tab === 'radar' ? -1 : undefined}
-              >
-                Refresh
-              </button>
-              <span className="app-header__timestamp">Updated {lastRefresh}</span>
-            </div>
           </div>
           <div className="app-header__tabs">
             <TabSelector tab={tab} setTab={setTab} />

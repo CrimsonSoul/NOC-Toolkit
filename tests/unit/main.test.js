@@ -196,11 +196,11 @@ describe('safeOpenExternalLink', () => {
 })
 
 describe('openExcelFile', () => {
-  it('opens known Excel files', () => {
+  it('opens known Excel files', async () => {
     const openPathSpy = vi.spyOn(electronStub.shell, 'openPath').mockResolvedValue('')
     const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true)
 
-    const result = main.__testables.openExcelFile('groups.xlsx')
+    const result = await main.__testables.openExcelFile('groups.xlsx')
 
     expect(result).toBe(true)
     expect(openPathSpy).toHaveBeenCalledWith(groupsPath)
@@ -209,11 +209,11 @@ describe('openExcelFile', () => {
     existsSpy.mockRestore()
   })
 
-  it('blocks unexpected filenames', () => {
+  it('blocks unexpected filenames', async () => {
     const openPathSpy = vi.spyOn(electronStub.shell, 'openPath')
     const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true)
 
-    const result = main.__testables.openExcelFile('../secrets.txt')
+    const result = await main.__testables.openExcelFile('../secrets.txt')
 
     expect(result).toBe(false)
     expect(openPathSpy).not.toHaveBeenCalled()
@@ -223,11 +223,11 @@ describe('openExcelFile', () => {
     existsSpy.mockRestore()
   })
 
-  it('warns when the requested file is missing', () => {
+  it('warns when the requested file is missing', async () => {
     const openPathSpy = vi.spyOn(electronStub.shell, 'openPath')
     const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(false)
 
-    const result = main.__testables.openExcelFile('contacts.xlsx')
+    const result = await main.__testables.openExcelFile('contacts.xlsx')
 
     expect(result).toBe(false)
     expect(openPathSpy).not.toHaveBeenCalled()

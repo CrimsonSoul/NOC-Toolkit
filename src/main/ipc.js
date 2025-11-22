@@ -8,8 +8,13 @@ const pendingAuthRequests = new Map()
 function setupIpcHandlers() {
   ipcMain.handle('load-excel-data', async () => getCachedData())
 
-  ipcMain.on('open-excel-file', (_event, filename) => {
-    openExcelFile(filename)
+  ipcMain.handle('open-excel-file', async (_event, filename) => {
+    try {
+      return openExcelFile(filename)
+    } catch (error) {
+      log.error('Failed to open Excel file:', error)
+      return false
+    }
   })
 
   ipcMain.handle('open-external-link', async (_event, url) => {

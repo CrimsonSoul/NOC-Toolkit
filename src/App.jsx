@@ -331,18 +331,24 @@ function App() {
         <div className="app-header-card">
           <div className="app-header__top">
             <div className="app-header__cluster">
-              <span className="app-header__title" aria-label="NOC Toolkit">
+              <span
+                className="app-header__title app-header__pill"
+                aria-label="NOC Toolkit"
+              >
                 NOC Toolkit
               </span>
             </div>
             <div className="app-header__meta">
-              <Clock />
+              <div className="app-header__pill app-header__clock" aria-label="Clock">
+                <Clock />
+              </div>
               <button
                 onClick={refreshData}
-                className={`btn btn-ghost app-header__refresh${
+                className={`btn btn-ghost app-header__pill app-header__refresh${
                   tab === 'radar' ? ' app-header__refresh--hidden' : ''
                 }`}
                 tabIndex={tab === 'radar' ? -1 : undefined}
+                type="button"
               >
                 Refresh
               </button>

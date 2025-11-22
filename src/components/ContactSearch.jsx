@@ -60,6 +60,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
   const [columnCount, setColumnCount] = useState(1)
   const [listHeight, setListHeight] = useState(MIN_LIST_HEIGHT)
   const [listWidth, setListWidth] = useState(0)
+  const [addedEmailSet, setAddedEmailSet] = useState(() => new Set())
   const rowGapRef = useRef(DEFAULT_COLUMN_GAP)
   const availableHeightRef = useRef(MIN_LIST_HEIGHT)
   const totalMeasuredHeightRef = useRef(0)
@@ -81,6 +82,38 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
   }, [indexedContacts, normalizedQuery])
 
   const isSearching = Boolean(normalizedQuery)
+
+  useEffect(() => {
+    setAddedEmailSet(new Set())
+  }, [contactData])
+
+  const addEmailToList = useCallback(
+    (email) => {
+      const cleanedEmail = typeof email === 'string' ? email.trim() : ''
+
+      if (!cleanedEmail) {
+        toast.error('No email address available for this contact')
+        return
+      }
+
+      if (typeof addAdhocEmail !== 'function') {
+        toast.error('Adding emails is currently unavailable')
+        return
+      }
+
+      const result = addAdhocEmail(cleanedEmail, { switchToEmailTab: true })
+      notifyAdhocEmailResult(cleanedEmail, result)
+
+      if (result === 'added') {
+        setAddedEmailSet((prev) => {
+          const next = new Set(prev)
+          next.add(cleanedEmail.toLowerCase())
+          return next
+        })
+      }
+    },
+    [addAdhocEmail],
+  )
 
   useEffect(() => {
     if (activeIndex >= filtered.length) {
@@ -550,22 +583,12 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
                   {row.map((contact, columnIndex) => {
                     const globalIndex = index * columnCount + columnIndex
                     const { raw, email, initials, formattedPhone, key } = contact
-                    const displayName = raw?.Name || email || 'Unknown'
-
-                    const handleAddToList = () => {
-                      if (!email) {
-                        toast.error('No email address available for this contact')
-                        return
-                      }
-
-                      if (typeof addAdhocEmail !== 'function') {
-                        toast.error('Adding emails is currently unavailable')
-                        return
-                      }
-
-                      const result = addAdhocEmail(email, { switchToEmailTab: true })
-                      notifyAdhocEmailResult(email, result)
-                    }
+                    const normalizedEmail = typeof email === 'string' ? email.trim() : ''
+                    const displayName = raw?.Name || normalizedEmail || 'Unknown'
+                    const alreadyAdded = normalizedEmail
+                      ? addedEmailSet.has(normalizedEmail.toLowerCase())
+                      : false
+                    const handleAddToList = () => addEmailToList(normalizedEmail)
 
                     return (
                       <div className="contact-card-wrapper" key={key}>
@@ -603,10 +626,16 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
                               onKeyDown={(e) => handleKeyDown(e, globalIndex)}
                               onFocus={() => setActiveIndex(globalIndex)}
                               type="button"
-                              disabled={typeof addAdhocEmail !== 'function' || !email}
+                              disabled={
+                                typeof addAdhocEmail !== 'function' || !normalizedEmail || alreadyAdded
+                              }
                               data-active={activeIndex === globalIndex ? 'true' : undefined}
                             >
-                              {email ? 'Add to Email List' : 'Email Unavailable'}
+                              {normalizedEmail
+                                ? alreadyAdded
+                                  ? 'Added to Email List'
+                                  : 'Add to Email List'
+                                : 'Email Unavailable'}
                             </button>
                           </div>
                         </article>

@@ -200,9 +200,7 @@ describe('openExcelFile', () => {
     const openPathSpy = vi.spyOn(electronStub.shell, 'openPath').mockResolvedValue('')
     const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true)
 
-    const result = await main.__testables.openExcelFile('groups.xlsx')
-
-    expect(result).toBe(true)
+    await expect(main.__testables.openExcelFile('groups.xlsx')).resolves.toBe(true)
     expect(openPathSpy).toHaveBeenCalledWith(groupsPath)
 
     openPathSpy.mockRestore()
@@ -213,9 +211,7 @@ describe('openExcelFile', () => {
     const openPathSpy = vi.spyOn(electronStub.shell, 'openPath')
     const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true)
 
-    const result = await main.__testables.openExcelFile('../secrets.txt')
-
-    expect(result).toBe(false)
+    await expect(main.__testables.openExcelFile('../secrets.txt')).resolves.toBe(false)
     expect(openPathSpy).not.toHaveBeenCalled()
     expect(logStub.warn).toHaveBeenCalled()
 
@@ -227,9 +223,7 @@ describe('openExcelFile', () => {
     const openPathSpy = vi.spyOn(electronStub.shell, 'openPath')
     const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(false)
 
-    const result = await main.__testables.openExcelFile('contacts.xlsx')
-
-    expect(result).toBe(false)
+    await expect(main.__testables.openExcelFile('contacts.xlsx')).resolves.toBe(false)
     expect(openPathSpy).not.toHaveBeenCalled()
     expect(logStub.warn).toHaveBeenCalledWith(
       expect.stringContaining('Requested Excel file not found'),

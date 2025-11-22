@@ -631,7 +631,10 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
                           <div className="contact-card__actions">
                             <button
                               ref={(node) => setItemRef(globalIndex, node)}
-                              onClick={handleAddToList}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                handleAddToList()
+                              }}
                               className="btn btn-outline btn-small"
                               onKeyDown={(e) => handleKeyDown(e, globalIndex)}
                               onFocus={() => setActiveIndex(globalIndex)}

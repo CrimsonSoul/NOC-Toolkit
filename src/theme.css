@@ -401,7 +401,7 @@ body {
   padding: 0.3rem 0.75rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-color);
-  background: rgba(18, 26, 40, 0.9);
+  background: var(--surface-raised);
   color: var(--text-light);
   cursor: pointer;
   font-weight: 500;
@@ -429,20 +429,20 @@ body {
 }
 
 .btn.btn-secondary {
-  background: rgba(15, 23, 36, 0.92);
-  border-color: rgba(94, 120, 163, 0.32);
-  color: rgba(202, 213, 230, 0.92);
+  background: var(--bg-panel);
+  border-color: var(--border-color);
+  color: var(--text-muted);
 }
 
 .btn.btn-secondary:hover {
   color: var(--text-light);
   border-color: rgba(59, 124, 255, 0.45);
-  background: rgba(21, 31, 47, 0.96);
+  background: var(--surface-hover);
 }
 
 .btn.btn-secondary:active,
 .btn.btn-secondary.active {
-  background: rgba(24, 36, 56, 0.98);
+  background: var(--bg-elevated);
   border-color: rgba(59, 124, 255, 0.55);
 }
 
@@ -495,21 +495,21 @@ body {
 }
 
 .btn.btn-ghost {
-  background: rgba(16, 25, 41, 0.48);
-  border-color: rgba(122, 152, 202, 0.28);
-  color: rgba(157, 178, 213, 0.88);
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-muted);
 }
 
 .btn.btn-ghost:hover {
   color: var(--text-light);
-  border-color: rgba(126, 156, 206, 0.55);
-  background: rgba(22, 32, 52, 0.68);
+  border-color: var(--border-color);
+  background: var(--surface-hover);
 }
 
 .btn.btn-ghost:active,
 .btn.btn-ghost.active {
-  background: rgba(116, 146, 216, 0.18);
-  border-color: rgba(126, 156, 206, 0.62);
+  background: var(--bg-elevated);
+  border-color: var(--border-color);
   color: var(--text-light);
 }
 
@@ -523,7 +523,7 @@ body {
   padding: 0.45rem 0.75rem;
   border-radius: 0;
   border: 1px solid var(--border-color);
-  background-color: rgba(15, 22, 35, 0.9);
+  background-color: var(--bg-secondary);
   color: var(--text-light);
   font-size: 0.9rem;
   outline: none;
@@ -533,8 +533,8 @@ body {
 
 .input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(108, 139, 255, 0.25);
-  background-color: rgba(18, 28, 48, 0.92);
+  box-shadow: var(--glow-accent);
+  background-color: var(--bg-elevated);
 }
 
 .input-wrapper {

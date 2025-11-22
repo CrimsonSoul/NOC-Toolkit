@@ -37,6 +37,132 @@ const parsePxValue = (value) => {
 }
 
 /**
+ * Helper component to render a single row of contact cards.
+ * Memoized to prevent re-renders when parent state (like activeIndex) changes but row data doesn't.
+ */
+const ContactRow = memo(({ index, style, data }) => {
+  const {
+    rows,
+    columnCount,
+    addedEmailSet,
+    addAdhocEmail,
+    setActiveIndex,
+    handleKeyDown,
+    setItemRef,
+    registerRow,
+  } = data
+
+  const row = rows[index]
+
+  return (
+    <div
+      style={{
+        ...style,
+        width: '100%',
+        maxWidth: '100%',
+        '--contact-columns': columnCount,
+      }}
+      className="contact-list__row"
+      ref={(node) => registerRow(index, node)}
+      data-row-index={index}
+    >
+      {row.map((contact, columnIndex) => {
+        const globalIndex = index * columnCount + columnIndex
+        const { raw, email, initials, formattedPhone, key } = contact
+        const normalizedEmail = normalizeEmail(email)
+        const displayName = raw?.Name || normalizedEmail || 'Unknown'
+        const alreadyAdded = normalizedEmail ? addedEmailSet.has(normalizedEmail) : false
+
+        const handleAddToList = () => {
+             const cleanedEmail = typeof (normalizedEmail ?? email ?? '') === 'string' ? (normalizedEmail ?? email ?? '').trim() : ''
+             const finalEmail = normalizeEmail(cleanedEmail)
+
+             if (!finalEmail) {
+                toast.error('No email address available for this contact')
+                return
+             }
+
+             if (typeof addAdhocEmail !== 'function') {
+                toast.error('Adding emails is currently unavailable')
+                return
+             }
+
+             // Call the adder
+             try {
+                const result = addAdhocEmail(cleanedEmail, { switchToEmailTab: true })
+                if (result === 'added' || result === 'duplicate' || result === 'invalid') {
+                  notifyAdhocEmailResult(cleanedEmail, result)
+                } else {
+                  toast.error('Unexpected response while adding email')
+                }
+             } catch (e) {
+                 console.error('Failed to add ad-hoc email:', e)
+                 toast.error('Unable to add email right now')
+             }
+        }
+
+        return (
+          <div className="contact-card-wrapper" key={key}>
+            <article className="contact-card" role="listitem">
+              <div className="contact-card__header">
+                <div className="contact-card__avatar">{initials}</div>
+                <div style={{ minWidth: 0 }}>
+                  <h3 className="contact-card__name" title={displayName}>{displayName}</h3>
+                  {raw?.Title && <p className="contact-card__title" title={raw.Title}>{raw.Title}</p>}
+                </div>
+              </div>
+
+              <div className="contact-card__body">
+                <div className="contact-card__row">
+                  <span className="label">Email</span>
+                  {email ? (
+                    <a href={`mailto:${email}`} title={email}>
+                      {email}
+                    </a>
+                  ) : (
+                    <span>N/A</span>
+                  )}
+                </div>
+                <div className="contact-card__row">
+                  <span className="label">Phone</span>
+                  <span>{formattedPhone || 'N/A'}</span>
+                </div>
+              </div>
+
+              <div className="contact-card__actions">
+                <button
+                  ref={(node) => setItemRef(globalIndex, node)}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    handleAddToList()
+                  }}
+                  className="btn btn-outline btn-small"
+                  onKeyDown={(e) => handleKeyDown(e, globalIndex)}
+                  onFocus={() => {
+                    // Functional update to prevent dependency on activeIndex in this component
+                    setActiveIndex((prev) => (prev === globalIndex ? prev : globalIndex))
+                  }}
+                  type="button"
+                  disabled={
+                    typeof addAdhocEmail !== 'function' || !normalizedEmail || alreadyAdded
+                  }
+                >
+                  {normalizedEmail
+                    ? alreadyAdded
+                      ? 'Added to Email List'
+                      : 'Add to Email List'
+                    : 'Email Unavailable'}
+                </button>
+              </div>
+            </article>
+          </div>
+        )
+      })}
+    </div>
+  )
+})
+
+/**
  * Provide a searchable list of contacts with quick email adding.
  * @param {Object} props
  * @param {Array} props.contactData - Parsed contact rows.
@@ -88,44 +214,17 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
     setAddedEmailSet(new Set())
   }, [contactData])
 
-  const addEmailToList = useCallback(
-    (email) => {
-      const cleanedEmail = typeof email === 'string' ? email.trim() : ''
-      const normalizedEmail = normalizeEmail(cleanedEmail)
+  // This is kept to handle updates from props if needed,
+  // but the logic is duplicated in Row component to avoid passing `addEmailToList` which changes.
+  // Wait, we should pass `addAdhocEmail` to Row and handle it there.
+  // We also need `setAddedEmailSet` to update the UI immediately.
+  // The original logic updated `addedEmailSet` in `addEmailToList`.
+  // Since `addAdhocEmail` is a prop, it's stable-ish? Usually props are stable.
+  // But `setAddedEmailSet` is stable.
 
-      if (!normalizedEmail) {
-        toast.error('No email address available for this contact')
-        return
-      }
-
-      if (typeof addAdhocEmail !== 'function') {
-        toast.error('Adding emails is currently unavailable')
-        return
-      }
-
-      try {
-        const result = addAdhocEmail(cleanedEmail, { switchToEmailTab: true })
-
-        if (result === 'added' || result === 'duplicate' || result === 'invalid') {
-          notifyAdhocEmailResult(cleanedEmail, result)
-        } else {
-          toast.error('Unexpected response while adding email')
-        }
-
-        if (result === 'added' || result === 'duplicate') {
-          setAddedEmailSet((prev) => {
-            const next = new Set(prev)
-            next.add(normalizedEmail)
-            return next
-          })
-        }
-      } catch (error) {
-        console.error('Failed to add ad-hoc email:', error)
-        toast.error('Unable to add email right now')
-      }
-    },
-    [addAdhocEmail],
-  )
+  // To ensure `addedEmailSet` updates reflect in the row, we pass `addedEmailSet` in `itemData`.
+  // `addedEmailSet` changes, so `itemData` changes, so List re-renders.
+  // This is desired: we WANT the button text to update to "Added to Email List".
 
   useEffect(() => {
     if (activeIndex >= filtered.length) {
@@ -529,6 +628,29 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
     }
   }, [])
 
+  // Create itemData for the Row component.
+  // Crucially, we do NOT include activeIndex here.
+  // We include setActiveIndex (stable setter).
+  const itemData = useMemo(() => ({
+    rows,
+    columnCount,
+    addedEmailSet,
+    addAdhocEmail,
+    setActiveIndex,
+    handleKeyDown,
+    setItemRef,
+    registerRow
+  }), [
+    rows,
+    columnCount,
+    addedEmailSet, // This changes when email is added, causing re-render of list items -> updates button text
+    addAdhocEmail,
+    setActiveIndex,
+    handleKeyDown,
+    setItemRef,
+    registerRow
+  ])
+
   return (
     <div className="contact-search" ref={containerRef}>
       <div className="sticky-header" ref={headerRef}>
@@ -577,87 +699,9 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
             itemCount={rows.length}
             itemSize={getRowHeight}
             outerElementType={ContactListOuter}
+            itemData={itemData}
           >
-            {({ index, style }) => {
-              const row = rows[index]
-              return (
-                <div
-                  style={{
-                    ...style,
-                    width: '100%',
-                    maxWidth: '100%',
-                    '--contact-columns': columnCount,
-                  }}
-                  className="contact-list__row"
-                  ref={(node) => registerRow(index, node)}
-                  data-row-index={index}
-                >
-                  {row.map((contact, columnIndex) => {
-                    const globalIndex = index * columnCount + columnIndex
-                    const { raw, email, initials, formattedPhone, key } = contact
-                    const normalizedEmail = normalizeEmail(email)
-                    const displayName = raw?.Name || normalizedEmail || 'Unknown'
-                    const alreadyAdded = normalizedEmail ? addedEmailSet.has(normalizedEmail) : false
-                    const handleAddToList = () => addEmailToList(normalizedEmail ?? email ?? '')
-
-                    return (
-                      <div className="contact-card-wrapper" key={key}>
-                        <article className="contact-card" role="listitem">
-                          <div className="contact-card__header">
-                            <div className="contact-card__avatar">{initials}</div>
-                            <div style={{ minWidth: 0 }}>
-                              <h3 className="contact-card__name" title={displayName}>{displayName}</h3>
-                              {raw?.Title && <p className="contact-card__title" title={raw.Title}>{raw.Title}</p>}
-                            </div>
-                          </div>
-
-                          <div className="contact-card__body">
-                            <div className="contact-card__row">
-                              <span className="label">Email</span>
-                              {email ? (
-                                <a href={`mailto:${email}`} title={email}>
-                                  {email}
-                                </a>
-                              ) : (
-                                <span>N/A</span>
-                              )}
-                            </div>
-                            <div className="contact-card__row">
-                              <span className="label">Phone</span>
-                              <span>{formattedPhone || 'N/A'}</span>
-                            </div>
-                          </div>
-
-                          <div className="contact-card__actions">
-                            <button
-                              ref={(node) => setItemRef(globalIndex, node)}
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                handleAddToList()
-                              }}
-                              className="btn btn-outline btn-small"
-                              onKeyDown={(e) => handleKeyDown(e, globalIndex)}
-                              onFocus={() => setActiveIndex(globalIndex)}
-                              type="button"
-                              disabled={
-                                typeof addAdhocEmail !== 'function' || !normalizedEmail || alreadyAdded
-                              }
-                              data-active={activeIndex === globalIndex ? 'true' : undefined}
-                            >
-                              {normalizedEmail
-                                ? alreadyAdded
-                                  ? 'Added to Email List'
-                                  : 'Add to Email List'
-                                : 'Email Unavailable'}
-                            </button>
-                          </div>
-                        </article>
-                      </div>
-                    )
-                  })}
-                </div>
-              )
-            }}
+            {ContactRow}
           </VariableSizeList>
         ) : (
           <div className="empty-state">

@@ -43,7 +43,7 @@ describe('ContactSearch', () => {
     const firstBtn = buttonsAfterInput[0]
     await new Promise((resolve) => setTimeout(resolve, 0))
     await waitFor(() => {
-      const activeButton = document.querySelector('button[data-active="true"]')
+      const activeButton = document.activeElement
       expect(activeButton).toBe(firstBtn)
     })
     fireEvent.keyDown(firstBtn, { key: 'ArrowDown' })
@@ -51,7 +51,7 @@ describe('ContactSearch', () => {
     const secondBtn = buttonsAfterArrow[1]
     await new Promise((resolve) => setTimeout(resolve, 0))
     await waitFor(() => {
-      const activeButton = document.querySelector('button[data-active="true"]')
+      const activeButton = document.activeElement
       expect(activeButton).toBe(secondBtn)
     })
     fireEvent.click(secondBtn)

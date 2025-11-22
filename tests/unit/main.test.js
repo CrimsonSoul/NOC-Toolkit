@@ -25,6 +25,7 @@ const logStub = {
   info: vi.fn(),
   transports: { file: {}, console: {} }
 }
+vi.mock('electron-log', () => ({ default: logStub, ...logStub }), { virtual: true })
 require.cache[require.resolve('electron-log')] = { exports: logStub }
 
 // We rely on the mocked utils logic which sets basePath to test dir

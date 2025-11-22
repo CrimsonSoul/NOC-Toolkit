@@ -23,6 +23,7 @@ const logStub = {
   info: vi.fn(),
   transports: { file: {}, console: {} }
 }
+vi.mock('electron-log', () => ({ default: logStub, ...logStub }), { virtual: true })
 require.cache[require.resolve('electron-log')] = { exports: logStub }
 
 const { loadExcelFiles, getCachedData, __setCachedData } = require('../../src/main/excel.js')

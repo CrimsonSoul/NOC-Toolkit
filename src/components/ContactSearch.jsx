@@ -467,12 +467,24 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
     [],
   )
 
+  const handleOpenContactsExcel = useCallback(async () => {
+    if (!window?.nocListAPI?.openFile) {
+      toast.error('Desktop bridge unavailable: cannot open Excel file')
+      return
+    }
+
+    const didOpen = await window.nocListAPI.openFile('contacts.xlsx')
+    if (!didOpen) {
+      toast.error('Unable to open contacts.xlsx')
+    }
+  }, [])
+
   return (
     <div className="contact-search" ref={containerRef}>
       <div className="sticky-header" ref={headerRef}>
         <div className="stack-on-small align-center gap-0-5 mb-1">
           <button
-            onClick={() => window.nocListAPI?.openFile?.('contacts.xlsx')}
+            onClick={handleOpenContactsExcel}
             className="btn btn-secondary"
           >
             Open Contact List Excel

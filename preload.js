@@ -14,7 +14,7 @@ contextBridge.exposeInMainWorld('nocListAPI', {
    * Ask the main process to open an Excel file.
    * @param {string} filename
    */
-  openFile: (filename) => ipcRenderer.send('open-excel-file', filename),
+  openFile: (filename) => ipcRenderer.invoke('open-excel-file', filename),
 
   /**
    * Listen for automatic Excel data updates.

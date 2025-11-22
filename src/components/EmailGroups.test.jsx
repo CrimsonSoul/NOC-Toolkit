@@ -156,7 +156,9 @@ describe('EmailGroups', () => {
 
     await user.click(screen.getByRole('button', { name: /Add to List/i }))
 
-    expect(addEmailMock).toHaveBeenCalledWith('bianca@example.com')
+    expect(addEmailMock).toHaveBeenCalledWith('bianca@example.com', {
+      switchToEmailTab: true,
+    })
   })
 
   it('disables add button when the contact is already included', async () => {

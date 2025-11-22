@@ -220,6 +220,18 @@ const EmailGroups = ({
     setRemovedManualEmails([])
   }, [setSelectedGroups, setAdhocEmails, setRemovedEmails, setRemovedManualEmails])
 
+  const handleOpenGroupsExcel = useCallback(async () => {
+    if (!window?.nocListAPI?.openFile) {
+      toast.error('Desktop bridge unavailable: cannot open Excel file')
+      return
+    }
+
+    const didOpen = await window.nocListAPI.openFile('groups.xlsx')
+    if (!didOpen) {
+      toast.error('Unable to open groups.xlsx')
+    }
+  }, [])
+
   const copyToClipboard = useCallback(async () => {
     if (activeEmails.length === 0) return
 
@@ -345,7 +357,7 @@ const EmailGroups = ({
         return
       }
 
-      const result = addAdhocEmail(cleanedEmail)
+      const result = addAdhocEmail(cleanedEmail, { switchToEmailTab: true })
       notifyAdhocEmailResult(cleanedEmail, result)
     },
     [addAdhocEmail],
@@ -387,7 +399,7 @@ const EmailGroups = ({
         <div className="stack-on-small align-center gap-0-5 mb-1">
           <div className="button-group">
             <button
-              onClick={() => window.nocListAPI?.openFile?.('groups.xlsx')}
+              onClick={handleOpenGroupsExcel}
               className="btn btn-secondary"
             >
               Open Email Groups Excel

@@ -226,8 +226,13 @@ const EmailGroups = ({
       return
     }
 
-    const didOpen = await window.nocListAPI.openFile('groups.xlsx')
-    if (!didOpen) {
+    try {
+      const didOpen = await window.nocListAPI.openFile('groups.xlsx')
+      if (!didOpen) {
+        toast.error('Unable to open groups.xlsx')
+      }
+    } catch (error) {
+      console.error('Failed to open groups.xlsx:', error)
       toast.error('Unable to open groups.xlsx')
     }
   }, [])
@@ -565,7 +570,15 @@ const EmailGroups = ({
               </div>
             </div>
 
-            <div className="contact-picker__list minimal-scrollbar" style={{ display: 'flex', flexDirection: 'column' }}>
+            <div
+              className="contact-picker__list minimal-scrollbar"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                minHeight: '320px',
+                maxHeight: '65vh',
+              }}
+            >
               {filteredContacts.length > 0 ? (
                 <VirtualContactList
                   contacts={filteredContacts}

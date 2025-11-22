@@ -21,9 +21,24 @@ const workbookSignatures = { groups: null, contacts: null }
 
 const getExcelPaths = () => {
   const base = getBasePath()
+  const resources = process.resourcesPath
+  const execDir = path.dirname(process.execPath)
+
+  const resolveExistingPath = (filename) => {
+    const candidates = [base, resources, execDir].filter(Boolean)
+    for (const candidate of candidates) {
+      const fullPath = path.join(candidate, filename)
+      if (fs.existsSync(fullPath)) {
+        return fullPath
+      }
+    }
+
+    return path.join(base, filename)
+  }
+
   return {
-    groupsPath: path.join(base, EXCEL_FILE_NAMES.groups),
-    contactsPath: path.join(base, EXCEL_FILE_NAMES.contacts),
+    groupsPath: resolveExistingPath(EXCEL_FILE_NAMES.groups),
+    contactsPath: resolveExistingPath(EXCEL_FILE_NAMES.contacts),
   }
 }
 
@@ -37,24 +52,75 @@ function resolveExcelFilePath(filename) {
     return null
   }
 
-  return path.join(getBasePath(), normalized)
+  const { groupsPath, contactsPath } = getExcelPaths()
+  return normalized === EXCEL_FILE_NAMES.groups ? groupsPath : contactsPath
 }
 
-function openExcelFile(filename) {
-  const filePath = resolveExcelFilePath(filename)
+async function prepareExcelPathForOpening(filename) {
+  const sourcePath = resolveExcelFilePath(filename)
+
+  if (!sourcePath) {
+    log.warn('Blocked attempt to open unexpected Excel file:', filename)
+    return null
+  }
+
+  if (!fs.existsSync(sourcePath)) {
+    log.warn(`Requested Excel file not found: ${sourcePath}`)
+    return null
+  }
+
+  const needsExtraction = sourcePath.includes('.asar') || sourcePath.includes('.asar.unpacked')
+  if (!needsExtraction) {
+    return sourcePath
+  }
+
+  try {
+    const cacheDir = path.join(app.getPath('userData'), 'excel-cache')
+    await fs.promises.mkdir(cacheDir, { recursive: true })
+    const cachedPath = path.join(cacheDir, path.basename(sourcePath))
+    await fs.promises.copyFile(sourcePath, cachedPath)
+    return cachedPath
+  } catch (error) {
+    log.error('Failed to extract Excel file from asar:', error)
+    return sourcePath
+  }
+}
+
+async function openExcelFile(filename) {
+  const filePath = await prepareExcelPathForOpening(filename)
 
   if (!filePath) {
-    log.warn('Blocked attempt to open unexpected Excel file:', filename)
     return false
   }
 
-  if (!fs.existsSync(filePath)) {
-    log.warn(`Requested Excel file not found: ${filePath}`)
+  try {
+    const result = await shell.openPath(filePath)
+
+    if (typeof result === 'string' && result.trim().length > 0) {
+      log.warn(`Failed to open Excel file: ${result}`)
+
+      if (!filePath.includes('.asar')) {
+        return false
+      }
+
+      const extractedPath = await prepareExcelPathForOpening(filename)
+      if (extractedPath && extractedPath !== filePath) {
+        const retryResult = await shell.openPath(extractedPath)
+        if (typeof retryResult === 'string' && retryResult.trim().length > 0) {
+          log.warn(`Retry failed to open Excel file: ${retryResult}`)
+          return false
+        }
+        return true
+      }
+
+      return false
+    }
+
+    return true
+  } catch (error) {
+    log.error('Failed to open Excel file via shell:', error)
     return false
   }
-
-  shell.openPath(filePath)
-  return true
 }
 
 const readFileWithRetry = async (filePath, attempts = 3, delay = 500) => {

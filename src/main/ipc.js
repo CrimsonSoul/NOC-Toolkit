@@ -10,7 +10,7 @@ function setupIpcHandlers() {
 
   ipcMain.handle('open-excel-file', async (_event, filename) => {
     try {
-      return openExcelFile(filename)
+      return await openExcelFile(filename)
     } catch (error) {
       log.error('Failed to open Excel file:', error)
       return false

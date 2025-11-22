@@ -298,25 +298,33 @@ function App() {
   const toastOptions = useMemo(
     () => ({
       style: {
-        background: 'var(--bg-secondary)',
+        background: 'var(--toast-bg)',
         color: 'var(--text-light)',
-        border: '1px solid var(--border-color)',
-        fontSize: '0.9rem',
-        borderRadius: '6px',
-        fontFamily: 'Barlow, DM Sans, sans-serif',
+        border: '1px solid var(--toast-border)',
+        fontSize: '0.85rem',
+        borderRadius: '0px',
+        fontFamily: 'inherit',
+        boxShadow: 'var(--shadow-md)',
+        padding: '0.75rem 1rem',
       },
       success: {
-        icon: '✓',
+        iconTheme: {
+          primary: 'var(--success)',
+          secondary: 'var(--bg-secondary)',
+        },
         style: {
-          background: 'var(--toast-success-bg)',
-          color: 'var(--text-light)',
+          background: 'var(--bg-elevated)',
+          borderLeft: '3px solid var(--success)',
         },
       },
       error: {
-        icon: '✕',
+        iconTheme: {
+          primary: 'var(--error)',
+          secondary: 'var(--bg-secondary)',
+        },
         style: {
-          background: 'var(--toast-error-bg)',
-          color: 'var(--text-light)',
+          background: 'var(--bg-elevated)',
+          borderLeft: '3px solid var(--error)',
         },
       },
     }),

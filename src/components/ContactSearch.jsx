@@ -677,7 +677,7 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
                   setActiveIndex(0)
                 }
               }}
-              className="input rounded-6 search-input"
+              className="input search-input"
               style={{ '--clear-btn-space': '2.25rem' }}
             />
             {query && (

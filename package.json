@@ -4,8 +4,10 @@
   "main": "main.js",
   "scripts": {
     "start": "node start-app.js",
-    "test": "vitest",
+    "test": "vitest run --watch=false",
+    "test:visual": "node scripts/run-visual-test.mjs",
     "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 4173 --strictPort",
     "package": "npm run build && electron-packager . NOCList --platform=win32 --arch=x64 --overwrite --out=release --icon=public/icon.ico --asar --prune=true && node scripts/copy-sample-data.mjs --target=windows",
     "package:mac": "node scripts/package-mac.mjs"
   },
@@ -26,6 +28,7 @@
     "@vitejs/plugin-react": "^4.0.0",
     "electron-packager": "^17.1.2",
     "jsdom": "^26.1.0",
+    "playwright": "^1.49.1",
     "vite": "^5.0.0",
     "vite-plugin-purgecss": "^0.2.13",
     "vitest": "^3.2.2"

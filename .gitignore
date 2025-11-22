@@ -1,5 +1,6 @@
 node_modules/
 public/icon.icns
 release/
-
+dist/
+preview.log
 visual-artifacts/

@@ -9,7 +9,8 @@ import React, {
 import { VariableSizeList } from 'react-window'
 import { normalizeEmail } from '../utils/normalizeEmail'
 
-const ROW_HEIGHT = 80 // Fixed height for simpler picker rows
+const DEFAULT_ROW_HEIGHT = 118
+const MIN_ROW_HEIGHT = 96
 const DEFAULT_HEIGHT = 380
 const DEFAULT_WIDTH = 320
 
@@ -24,6 +25,8 @@ const VirtualContactList = ({
 }) => {
   const listRef = useRef(null)
   const listContainerRef = useRef(null)
+  const sizeMapRef = useRef(new Map())
+  const rowObserversRef = useRef(new Map())
   const [listHeight, setListHeight] = useState(DEFAULT_HEIGHT)
   const [listWidth, setListWidth] = useState(0)
 
@@ -57,6 +60,26 @@ const VirtualContactList = ({
     return () => resizeObserver.disconnect()
   }, [contacts.length, measure])
 
+  const updateRowHeight = useCallback((index, measuredHeight) => {
+    if (typeof measuredHeight !== 'number') return
+
+    const height = Math.max(MIN_ROW_HEIGHT, measuredHeight)
+    const current = sizeMapRef.current.get(index)
+
+    if (current === height) return
+
+    sizeMapRef.current.set(index, height)
+    listRef.current?.resetAfterIndex?.(index)
+  }, [])
+
+  const unregisterRow = useCallback((index) => {
+    const observer = rowObserversRef.current.get(index)
+    if (observer) {
+      observer.disconnect()
+      rowObserversRef.current.delete(index)
+    }
+  }, [])
+
   const ContactPickerRow = useCallback(({ index, style }) => {
     const contact = contacts[index]
     const trimmedEmail = contact.email?.trim()
@@ -65,8 +88,33 @@ const VirtualContactList = ({
       ? activeEmailSet.has(normalizedEmail)
       : false
 
+    const setRowRef = (node) => {
+      if (!node) {
+        unregisterRow(index)
+        return
+      }
+
+      const measure = () => {
+        const measuredHeight = Math.ceil(node.getBoundingClientRect().height)
+        updateRowHeight(index, measuredHeight || DEFAULT_ROW_HEIGHT)
+      }
+
+      measure()
+
+      if (typeof ResizeObserver !== 'undefined') {
+        const observer = new ResizeObserver(measure)
+        observer.observe(node)
+        rowObserversRef.current.set(index, observer)
+      }
+    }
+
     return (
-      <article style={style} className="contact-picker__item" role="listitem">
+      <article
+        ref={setRowRef}
+        style={style}
+        className="contact-picker__item"
+        role="listitem"
+      >
         <div className="contact-picker__identity">
           <div className="contact-picker__avatar">{contact.initials}</div>
           <div>
@@ -110,7 +158,23 @@ const VirtualContactList = ({
         </div>
       </article>
     )
-  }, [contacts, activeEmailSet, onAddEmail, addAdhocEmail])
+  }, [contacts, activeEmailSet, onAddEmail, addAdhocEmail, unregisterRow, updateRowHeight])
+
+  useEffect(() => () => {
+    rowObserversRef.current.forEach((observer) => observer.disconnect())
+    rowObserversRef.current.clear()
+    sizeMapRef.current.clear()
+  }, [])
+
+  useEffect(() => {
+    sizeMapRef.current.clear()
+    listRef.current?.resetAfterIndex?.(0, true)
+  }, [contacts])
+
+  const getRowHeight = useCallback(
+    (index) => sizeMapRef.current.get(index) || DEFAULT_ROW_HEIGHT,
+    [],
+  )
 
   return (
     <div
@@ -122,7 +186,7 @@ const VirtualContactList = ({
         height={listHeight}
         width={Math.max(1, Math.round(listWidth || DEFAULT_WIDTH))}
         itemCount={contacts.length}
-        itemSize={() => ROW_HEIGHT}
+        itemSize={getRowHeight}
       >
         {ContactPickerRow}
       </VariableSizeList>

@@ -1,22 +1,22 @@
 :root {
-  --bg-secondary: #111121;
-  --bg-elevated: #1a1a2c;
-  --bg-panel: #1a1a2c;
-  --surface-raised: #1a1a2c;
-  --surface-hover: #24243e;
-  --text-light: #bebfd0;
-  --text-muted: #8b8c9e;
-  --accent: #5886db;
-  --border-color: rgba(118, 148, 198, 0.15);
-  --button-text: #ffffff;
-  --button-hover: #4a75c9;
-  --button-active: #3d62aa;
-  --toast-success-bg: rgba(88, 134, 219, 0.16);
+  --bg-secondary: #0b1018;
+  --bg-elevated: #11192a;
+  --bg-panel: #0f1421;
+  --surface-raised: #141c2d;
+  --surface-hover: #1b2437;
+  --text-light: #e3e8f1;
+  --text-muted: #98a7be;
+  --accent: #5de6ff;
+  --border-color: rgba(94, 120, 163, 0.36);
+  --button-text: #061118;
+  --button-hover: #4ac8e4;
+  --button-active: #33b2cf;
+  --toast-success-bg: rgba(93, 230, 255, 0.1);
   --toast-error-bg: rgba(244, 114, 114, 0.16);
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
-  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.3);
-  --shadow-inset: none;
-  --glow-accent: 0 0 0 1px rgba(88, 134, 219, 0.42);
+  --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.45);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --glow-accent: 0 0 0 1px rgba(93, 230, 255, 0.45);
   --radius-lg: 0px;
   --radius-md: 0px;
   --radius-sm: 0px;
@@ -106,7 +106,7 @@ body {
   align-items: center;
   justify-content: flex-start;
   padding: 0.25rem 0.75rem;
-  border-radius: 2px;
+  border-radius: 0;
   border: 1px solid var(--border-color);
   background: var(--bg-panel);
   box-shadow: none;
@@ -353,6 +353,7 @@ body {
   justify-content: flex-start;
   flex-direction: column;
   min-height: 0;
+  height: calc(100vh - var(--app-header-offset));
 }
 
 .app-main--radar .module-card--radar {
@@ -391,6 +392,8 @@ body {
   --module-pad: clamp(0.85rem, 1.4vw, 1.2rem);
   gap: clamp(0.75rem, 1.2vw, 1.05rem);
   width: 100%;
+  flex: 1 1 auto;
+  display: flex;
 }
 
 .email-groups,
@@ -440,8 +443,8 @@ body {
 .btn {
   padding: 0.3rem 0.75rem;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(136, 166, 218, 0.35);
-  background: rgba(116, 146, 216, 0.12);
+  border: 1px solid var(--border-color);
+  background: rgba(18, 26, 40, 0.9);
   color: var(--text-light);
   cursor: pointer;
   font-weight: 600;
@@ -458,63 +461,63 @@ body {
 }
 
 .btn:hover {
-  border-color: rgba(116, 146, 216, 0.55);
-  background: rgba(116, 146, 216, 0.2);
+  border-color: rgba(93, 230, 255, 0.45);
+  background: rgba(24, 34, 50, 0.95);
 }
 
 .btn:active,
 .btn.active {
-  background: rgba(116, 146, 216, 0.28);
-  border-color: rgba(116, 146, 216, 0.75);
+  background: rgba(29, 44, 64, 0.95);
+  border-color: rgba(93, 230, 255, 0.55);
 }
 
 .btn.btn-secondary {
-  background: rgba(17, 27, 44, 0.72);
-  border-color: rgba(126, 156, 206, 0.28);
-  color: rgba(157, 178, 213, 0.88);
+  background: rgba(15, 23, 36, 0.92);
+  border-color: rgba(94, 120, 163, 0.32);
+  color: rgba(202, 213, 230, 0.92);
 }
 
 .btn.btn-secondary:hover {
   color: var(--text-light);
-  border-color: rgba(126, 156, 206, 0.52);
-  background: rgba(19, 30, 49, 0.88);
+  border-color: rgba(93, 230, 255, 0.45);
+  background: rgba(21, 31, 47, 0.96);
 }
 
 .btn.btn-secondary:active,
 .btn.btn-secondary.active {
-  background: rgba(21, 33, 56, 0.94);
-  border-color: rgba(126, 156, 206, 0.65);
+  background: rgba(24, 36, 56, 0.98);
+  border-color: rgba(93, 230, 255, 0.55);
 }
 
 .btn.btn-accent {
   background: var(--accent);
-  border-color: rgba(114, 148, 228, 0.85);
+  border-color: rgba(93, 230, 255, 0.6);
   color: var(--button-text);
-  box-shadow: 0 14px 32px rgba(108, 139, 255, 0.25);
+  box-shadow: 0 14px 32px rgba(93, 230, 255, 0.25);
 }
 
 .btn.btn-accent:hover {
   background: var(--button-hover);
-  border-color: rgba(114, 148, 228, 0.95);
+  border-color: rgba(93, 230, 255, 0.75);
 }
 
 .btn.btn-accent:active,
 .btn.btn-accent.active {
   background: var(--button-active);
-  border-color: rgba(114, 148, 228, 0.75);
-  box-shadow: 0 10px 22px rgba(108, 139, 255, 0.24);
+  border-color: rgba(93, 230, 255, 0.75);
+  box-shadow: 0 10px 22px rgba(93, 230, 255, 0.24);
 }
 
 .btn.btn-outline {
   background: transparent;
-  border-color: rgba(136, 166, 218, 0.32);
-  color: rgba(157, 178, 213, 0.88);
+  border-color: var(--border-color);
+  color: rgba(202, 213, 230, 0.92);
 }
 
 .btn.btn-outline:hover {
   color: var(--text-light);
-  border-color: rgba(126, 156, 206, 0.52);
-  background: rgba(116, 146, 216, 0.1);
+  border-color: rgba(93, 230, 255, 0.45);
+  background: rgba(24, 34, 50, 0.6);
 }
 
 .btn.btn-outline:active,
@@ -561,9 +564,9 @@ body {
 .input {
   box-sizing: border-box;
   padding: 0.45rem 0.75rem;
-  border-radius: 2px;
-  border: 1px solid rgba(126, 156, 206, 0.32);
-  background-color: rgba(13, 21, 35, 0.85);
+  border-radius: 0;
+  border: 1px solid var(--border-color);
+  background-color: rgba(15, 22, 35, 0.9);
   color: var(--text-light);
   font-size: 0.9rem;
   outline: none;
@@ -614,8 +617,8 @@ body {
 .contact-picker-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(5, 8, 15, 0.78);
-  backdrop-filter: blur(14px);
+  background: rgba(5, 8, 15, 0.82);
+  backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -633,7 +636,7 @@ body {
   gap: 1.25rem;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 20px;
+  border-radius: 0;
   padding: clamp(1.25rem, 2vw, 1.75rem);
   box-shadow: var(--shadow-lg);
   margin: auto;
@@ -648,7 +651,7 @@ body {
   .contact-picker {
     width: 100%;
     max-height: none;
-    border-radius: 16px;
+    border-radius: 0;
   }
 }
 
@@ -684,9 +687,9 @@ body {
   grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.2fr) auto;
   gap: 1rem;
   padding: 1rem 1.1rem;
-  border-radius: 16px;
-  border: 1px solid rgba(110, 142, 184, 0.25);
-  background: rgba(11, 16, 25, 0.85);
+  border-radius: 0;
+  border: 1px solid var(--border-color);
+  background: rgba(16, 23, 36, 0.9);
 }
 
 @media (max-width: 800px) {
@@ -708,8 +711,8 @@ body {
 .contact-picker__avatar {
   width: 46px;
   height: 46px;
-  border-radius: 12px;
-  background: rgba(76, 139, 245, 0.2);
+  border-radius: 0;
+  background: rgba(93, 230, 255, 0.18);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -764,9 +767,9 @@ body {
   gap: 0.28rem;
   border: 1px solid rgba(132, 164, 214, 0.38);
   padding: 0.26rem;
-  border-radius: var(--radius-md);
-  background: rgba(14, 23, 38, 0.7);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border-radius: 0;
+  background: rgba(12, 18, 31, 0.85);
+  box-shadow: none;
   width: 100%;
   overflow: hidden;
 }
@@ -774,7 +777,7 @@ body {
 .tab-button {
   cursor: pointer;
   padding: 0.36rem 0.75rem;
-  border-radius: calc(var(--radius-md) - 4px);
+  border-radius: 0;
   border: 1px solid transparent;
   background: transparent;
   color: rgba(157, 178, 213, 0.88);
@@ -808,9 +811,9 @@ body {
 }
 
 .tab-button.active {
-  background: rgba(116, 146, 216, 0.22);
-  border-color: rgba(116, 146, 216, 0.55);
-  box-shadow: 0 0 0 1px rgba(116, 146, 216, 0.25);
+  background: linear-gradient(180deg, rgba(93, 230, 255, 0.18), rgba(76, 192, 210, 0.14));
+  border-color: rgba(93, 230, 255, 0.35);
+  box-shadow: var(--glow-accent);
   color: var(--text-light);
 }
 
@@ -835,7 +838,7 @@ body {
   position: relative;
   width: min(420px, 92vw);
   background: var(--bg-elevated);
-  border-radius: 16px;
+  border-radius: 0;
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-lg);
   padding: clamp(1.2rem, 1.4vw + 0.75rem, 1.85rem);
@@ -882,7 +885,7 @@ body {
   border: 1px solid rgba(244, 114, 114, 0.35);
   color: #f7c8c8;
   padding: 0.6rem 0.75rem;
-  border-radius: 10px;
+  border-radius: 0;
   font-size: 0.86rem;
 }
 
@@ -908,9 +911,9 @@ body {
 
 .auth-modal__input {
   padding: 0.5rem 0.65rem;
-  border-radius: 8px;
-  border: 1px solid rgba(110, 142, 184, 0.45);
-  background: rgba(10, 16, 24, 0.85);
+  border-radius: 0;
+  border: 1px solid var(--border-color);
+  background: rgba(12, 18, 29, 0.9);
   color: var(--text-light);
   font-size: 0.95rem;
   font-family: inherit;
@@ -919,7 +922,7 @@ body {
 
 .auth-modal__input:focus {
   outline: none;
-  border-color: rgba(76, 139, 245, 0.65);
+  border-color: rgba(93, 230, 255, 0.5);
   box-shadow: var(--glow-accent);
 }
 
@@ -942,6 +945,7 @@ body {
   .auth-modal__card {
     width: min(100%, 360px);
     padding: 1.1rem 1.25rem;
+    border-radius: 0;
   }
 
   .auth-modal__actions {
@@ -967,7 +971,7 @@ body {
 .gap-0-5 { gap: 0.5rem; }
 .mb-1 { margin-bottom: 1rem; }
 .m-0 { margin: 0; }
-.rounded-6 { border-radius: 12px; }
+.rounded-6 { border-radius: 0; }
 
 .stack-on-small {
   display: flex;
@@ -1109,7 +1113,7 @@ a[href^="mailto:"]:hover {
 
 *::-webkit-scrollbar-thumb {
   background: var(--accent);
-  border-radius: 999px;
+  border-radius: 0;
 }
 
 .minimal-scrollbar {
@@ -1128,7 +1132,7 @@ a[href^="mailto:"]:hover {
 
 .minimal-scrollbar::-webkit-scrollbar-thumb {
   background: var(--accent);
-  border-radius: 999px;
+  border-radius: 0;
 }
 
 .progress-container {
@@ -1138,7 +1142,7 @@ a[href^="mailto:"]:hover {
   background: rgba(148, 163, 184, 0.18);
   margin-top: 0.4rem;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: 0;
 }
 
 .progress-bar {
@@ -1148,7 +1152,7 @@ a[href^="mailto:"]:hover {
   height: 100%;
   background: var(--accent);
   animation: code-progress var(--duration, 300s) linear forwards;
-  border-radius: 999px;
+  border-radius: 0;
 }
 
 .code-display {
@@ -1210,11 +1214,11 @@ a[href^="mailto:"]:hover {
   flex: 1 1 auto;
   height: 100%;
   align-items: stretch;
-  border-radius: var(--radius-lg);
+  border-radius: 0;
   background: var(--bg-elevated);
   box-shadow: var(--shadow-lg);
   overflow: hidden;
-  min-height: max(420px, 60vh);
+  min-height: 0;
   display: flex;
   padding: var(--radar-frame-padding);
 }
@@ -1222,19 +1226,19 @@ a[href^="mailto:"]:hover {
 .radar-frame {
   flex: 1 1 auto;
   width: 100%;
-  min-height: 100%;
-  height: auto;
-  border-radius: max(12px, calc(20px - var(--radar-frame-padding)));
-  border: 1px solid rgba(126, 158, 210, 0.32);
+  min-height: 0;
+  height: 100%;
+  border-radius: 0;
+  border: 1px solid rgba(94, 120, 163, 0.4);
   display: block;
   background: transparent;
 }
 
 .radar-fallback {
   padding: clamp(1.5rem, 2vw, 2.25rem);
-  border-radius: 22px;
+  border-radius: 0;
   background: var(--surface-raised);
-  border: 1px solid rgba(126, 158, 210, 0.35);
+  border: 1px solid rgba(94, 120, 163, 0.35);
   box-shadow: var(--shadow-lg);
   width: min(100%, 520px);
   margin: 0 auto;
@@ -1255,7 +1259,7 @@ a[href^="mailto:"]:hover {
   margin-top: 0;
   width: 100%;
   max-width: 100%;
-  border-radius: 18px;
+  border-radius: 0;
   overflow-x: hidden;
   box-sizing: border-box;
 }
@@ -1292,7 +1296,7 @@ a[href^="mailto:"]:hover {
 .contact-card {
   position: relative;
   background: var(--bg-panel);
-  border-radius: var(--radius-md);
+  border-radius: 0;
   border: 1px solid var(--border-color);
   color: var(--text-light);
   transition: transform 0.25s ease, box-shadow 0.25s ease, border 0.25s ease;
@@ -1341,8 +1345,8 @@ a[href^="mailto:"]:hover {
   width: 40px;
   height: 40px;
   min-width: 40px;
-  border-radius: 14px;
-  background: rgba(63, 131, 248, 0.28);
+  border-radius: 0;
+  background: rgba(93, 230, 255, 0.18);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1429,7 +1433,7 @@ a[href^="mailto:"]:hover {
   max-width: none;
   margin: 0 auto;
   background: var(--bg-elevated);
-  border-radius: 20px;
+  border-radius: 0;
   border: 1px solid var(--border-color);
   padding: clamp(1rem, 1.5vw, 1.4rem);
   box-shadow: var(--shadow-md);
@@ -1463,7 +1467,7 @@ a[href^="mailto:"]:hover {
 }
 
 .list-item-button {
-  border-radius: 16px;
+  border-radius: 0;
   border: 1px solid rgba(148, 163, 184, 0.22);
   background: var(--bg-panel);
   color: var(--text-light);
@@ -1515,17 +1519,17 @@ a[href^="mailto:"]:hover {
   max-height: clamp(160px, 32vh, 260px);
   overflow-y: auto;
   padding: 0.5rem;
-  border-radius: 16px;
+  border-radius: 0;
   background: var(--bg-elevated);
   border: 1px solid var(--border-color);
 }
 
 .email-chip {
-  border: 1px solid rgba(76, 139, 245, 0.45);
-  background: rgba(76, 139, 245, 0.12);
+  border: 1px solid rgba(93, 230, 255, 0.45);
+  background: rgba(93, 230, 255, 0.12);
   color: var(--text-light);
   padding: 0.45rem 0.85rem;
-  border-radius: 999px;
+  border-radius: 0;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -1536,12 +1540,12 @@ a[href^="mailto:"]:hover {
 
 .email-chip:hover {
   transform: translateY(-1px);
-  border-color: rgba(76, 139, 245, 0.6);
-  background: rgba(76, 139, 245, 0.2);
+  border-color: rgba(93, 230, 255, 0.6);
+  background: rgba(93, 230, 255, 0.18);
 }
 
 .email-chip:focus-visible {
-  outline: 2px solid rgba(76, 139, 245, 0.75);
+  outline: 2px solid rgba(93, 230, 255, 0.75);
   outline-offset: 2px;
 }
 

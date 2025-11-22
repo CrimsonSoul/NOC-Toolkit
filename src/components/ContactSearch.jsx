@@ -12,6 +12,7 @@ import React, {
 import { VariableSizeList } from 'react-window'
 import { toast } from 'react-hot-toast'
 import { normalizeSearchText } from '../utils/normalizeText'
+import { normalizeEmail } from '../utils/normalizeEmail'
 import { notifyAdhocEmailResult } from '../utils/notifyAdhocEmailResult'
 import { buildIndexedContacts } from '../utils/contactIndex'
 
@@ -90,8 +91,9 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
   const addEmailToList = useCallback(
     (email) => {
       const cleanedEmail = typeof email === 'string' ? email.trim() : ''
+      const normalizedEmail = normalizeEmail(cleanedEmail)
 
-      if (!cleanedEmail) {
+      if (!normalizedEmail) {
         toast.error('No email address available for this contact')
         return
       }
@@ -101,15 +103,25 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
         return
       }
 
-      const result = addAdhocEmail(cleanedEmail, { switchToEmailTab: true })
-      notifyAdhocEmailResult(cleanedEmail, result)
+      try {
+        const result = addAdhocEmail(cleanedEmail, { switchToEmailTab: true })
 
-      if (result === 'added') {
-        setAddedEmailSet((prev) => {
-          const next = new Set(prev)
-          next.add(cleanedEmail.toLowerCase())
-          return next
-        })
+        if (result === 'added' || result === 'duplicate' || result === 'invalid') {
+          notifyAdhocEmailResult(cleanedEmail, result)
+        } else {
+          toast.error('Unexpected response while adding email')
+        }
+
+        if (result === 'added' || result === 'duplicate') {
+          setAddedEmailSet((prev) => {
+            const next = new Set(prev)
+            next.add(normalizedEmail)
+            return next
+          })
+        }
+      } catch (error) {
+        console.error('Failed to add ad-hoc email:', error)
+        toast.error('Unable to add email right now')
       }
     },
     [addAdhocEmail],
@@ -583,12 +595,10 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
                   {row.map((contact, columnIndex) => {
                     const globalIndex = index * columnCount + columnIndex
                     const { raw, email, initials, formattedPhone, key } = contact
-                    const normalizedEmail = typeof email === 'string' ? email.trim() : ''
+                    const normalizedEmail = normalizeEmail(email)
                     const displayName = raw?.Name || normalizedEmail || 'Unknown'
-                    const alreadyAdded = normalizedEmail
-                      ? addedEmailSet.has(normalizedEmail.toLowerCase())
-                      : false
-                    const handleAddToList = () => addEmailToList(normalizedEmail)
+                    const alreadyAdded = normalizedEmail ? addedEmailSet.has(normalizedEmail) : false
+                    const handleAddToList = () => addEmailToList(normalizedEmail ?? email ?? '')
 
                     return (
                       <div className="contact-card-wrapper" key={key}>

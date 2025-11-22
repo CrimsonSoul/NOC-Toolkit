@@ -9,8 +9,8 @@ import React, {
 import { VariableSizeList } from 'react-window'
 import { normalizeEmail } from '../utils/normalizeEmail'
 
-const DEFAULT_ROW_HEIGHT = 118
-const MIN_ROW_HEIGHT = 96
+const DEFAULT_ROW_HEIGHT = 148
+const MIN_ROW_HEIGHT = 128
 const DEFAULT_HEIGHT = 380
 const DEFAULT_WIDTH = 320
 
@@ -45,6 +45,7 @@ const VirtualContactList = ({
 
   useLayoutEffect(() => {
     measure()
+    listRef.current?.resetAfterIndex?.(0, true)
   }, [measure])
 
   useEffect(() => {
@@ -171,6 +172,11 @@ const VirtualContactList = ({
     listRef.current?.resetAfterIndex?.(0, true)
   }, [contacts])
 
+  useEffect(() => {
+    sizeMapRef.current.clear()
+    listRef.current?.resetAfterIndex?.(0, true)
+  }, [listHeight, listWidth])
+
   const getRowHeight = useCallback(
     (index) => sizeMapRef.current.get(index) || DEFAULT_ROW_HEIGHT,
     [],
@@ -178,7 +184,12 @@ const VirtualContactList = ({
 
   return (
     <div
-      style={{ flex: 1, height: '100%', minHeight: DEFAULT_HEIGHT, overflow: 'hidden' }}
+      style={{
+        flex: 1,
+        height: '100%',
+        minHeight: Math.max(DEFAULT_HEIGHT, DEFAULT_ROW_HEIGHT * 3),
+        overflow: 'hidden'
+      }}
       ref={listContainerRef}
     >
       <VariableSizeList

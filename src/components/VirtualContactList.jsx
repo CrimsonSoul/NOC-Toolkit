@@ -9,8 +9,9 @@ import React, {
 import { VariableSizeList } from 'react-window'
 import { normalizeEmail } from '../utils/normalizeEmail'
 
-const DEFAULT_ROW_HEIGHT = 148
-const MIN_ROW_HEIGHT = 128
+const DEFAULT_ROW_HEIGHT = 168
+const MIN_ROW_HEIGHT = 148
+const ROW_GAP = 12
 const DEFAULT_HEIGHT = 380
 const DEFAULT_WIDTH = 320
 
@@ -97,7 +98,7 @@ const VirtualContactList = ({
 
       const measure = () => {
         const measuredHeight = Math.ceil(node.getBoundingClientRect().height)
-        updateRowHeight(index, measuredHeight || DEFAULT_ROW_HEIGHT)
+        updateRowHeight(index, (measuredHeight || DEFAULT_ROW_HEIGHT) + ROW_GAP)
       }
 
       measure()
@@ -112,7 +113,12 @@ const VirtualContactList = ({
     return (
       <article
         ref={setRowRef}
-        style={style}
+        style={{
+          ...style,
+          width: style.width || '100%',
+          height: (style.height || DEFAULT_ROW_HEIGHT) + ROW_GAP,
+          boxSizing: 'border-box',
+        }}
         className="contact-picker__item"
         role="listitem"
       >
@@ -145,7 +151,10 @@ const VirtualContactList = ({
           <button
             type="button"
             className="btn btn-outline btn-small"
-            onClick={() => onAddEmail(trimmedEmail)}
+            onClick={(event) => {
+              event.stopPropagation()
+              onAddEmail(trimmedEmail)
+            }}
             disabled={
               typeof addAdhocEmail !== 'function' || !trimmedEmail || isAlreadyAdded
             }
@@ -178,7 +187,7 @@ const VirtualContactList = ({
   }, [listHeight, listWidth])
 
   const getRowHeight = useCallback(
-    (index) => sizeMapRef.current.get(index) || DEFAULT_ROW_HEIGHT,
+    (index) => sizeMapRef.current.get(index) || DEFAULT_ROW_HEIGHT + ROW_GAP,
     [],
   )
 

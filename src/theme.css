@@ -639,6 +639,8 @@ body {
   border-radius: 0;
   border: 1px solid var(--border-color);
   background: rgba(16, 23, 36, 0.9);
+  box-sizing: border-box;
+  width: 100%;
 }
 
 @media (max-width: 800px) {
@@ -671,13 +673,14 @@ body {
 
 .contact-picker__name {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: clamp(1.05rem, 1.2vw, 1.15rem);
+  color: var(--text-light);
 }
 
 .contact-picker__title {
   margin: 0.1rem 0 0;
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: 0.9rem;
 }
 
 .contact-picker__details {
@@ -691,7 +694,7 @@ body {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--text-muted);
+  color: var(--accent);
   margin-bottom: 0.1rem;
 }
 

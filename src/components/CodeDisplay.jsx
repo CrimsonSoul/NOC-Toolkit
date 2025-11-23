@@ -50,7 +50,7 @@ const CodeDisplay = ({ currentCode, previousCode, progressKey, intervalMs, child
       <div className="code-display__row">
         <div className="code-display__meta">
           <span className="small-text text-muted">Current Code</span>
-          <div className="code-display__value large-bold" aria-live="polite">
+          <div className="code-display__value" aria-live="polite">
             {currentCode}
           </div>
           {hasPrevious && <span className="code-display__previous small-muted">Prev: {previousCode}</span>}

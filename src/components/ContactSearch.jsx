@@ -18,8 +18,8 @@ import { buildIndexedContacts } from '../utils/contactIndex'
 const MIN_COLUMN_WIDTH = 260
 const MIN_LIST_HEIGHT = 320
 const LIST_BOTTOM_PADDING = 24
-const DEFAULT_ROW_HEIGHT = 200 // Reduced for High Density
-const MIN_ROW_HEIGHT = 160     // Reduced for High Density
+const DEFAULT_ROW_HEIGHT = 260
+const MIN_ROW_HEIGHT = 210
 const DEFAULT_COLUMN_GAP = 20
 
 const parsePxValue = (value) => {
@@ -164,7 +164,6 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
       return
     }
 
-    // Still track header height for general layout if needed, but not for padding compensation
     container.style.setProperty('--contact-header-height', `${header.offsetHeight}px`)
 
     const measurementTarget = listSurfaceRef.current || container
@@ -449,11 +448,10 @@ const ContactSearch = ({ contactData, addAdhocEmail }) => {
             ref={ref}
             style={{
               ...style,
-              // Removed calculation including header height
-              // because header is now strictly above the list (not overlay)
-              // Padding Top is kept 0 or small just for breathing room inside the scroll
-              paddingTop: '1rem',
-              scrollPaddingTop: '1rem',
+              paddingTop:
+                'calc(var(--contact-header-height) + var(--contact-list-offset))',
+              scrollPaddingTop:
+                'calc(var(--contact-header-height) + var(--contact-list-offset))',
               marginTop: 0,
               outline: 'none',
             }}
